@@ -1,7 +1,7 @@
 <!--
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  CONTAINER-MAKE // HIGH-FIDELITY README (BILINGUAL EDITION)              │
-│  DESIGNED FOR: SUPERIOR DEVELOPER EXPERIENCE                             │
+│  STATUS: REPAIRED & OPTIMIZED                                            │
 │  STYLE: CYBER-INDUSTRIAL                                                 │
 └──────────────────────────────────────────────────────────────────────────┘
 -->
@@ -15,11 +15,11 @@
 
 
 <a href="#-english-version">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/LANG-ENGLISH-007acc%3Fstyle%3Dfor-the-badge%26logo%3Dgoogle-translate%26logoColor%3Dwhite" height="25">
+<img src="https://www.google.com/search?q=https://img.shields.io/badge/LANG-ENGLISH-007acc%3Fstyle%3Dfor-the-badge%26logo%3Dgoogle-translate%26logoColor%3Dwhite" height="20">
 </a>
 &nbsp;
 <a href="#-中文版-chinese-version">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-e2b340%3Fstyle%3Dfor-the-badge%26logo%3Dgoogle-translate%26logoColor%3Dblack" height="25">
+<img src="https://www.google.com/search?q=https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-e2b340%3Fstyle%3Dfor-the-badge%26logo%3Dgoogle-translate%26logoColor%3Dblack" height="20">
 </a>
 
 
@@ -91,14 +91,12 @@ Container-Make fuses the speed of <b>Makefiles</b>, the isolation of <b>Docker</
 <tr>
 <td style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 25px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
 
-<!-- Fake Window Controls -->
+<!-- Fake Window Controls (UNICODE for stability) -->
 
 <div align="left" style="margin-bottom: 15px;">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/●-ff5f56?style=flat-square&labelColor=transparent&logoWidth=0" height="10">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/●-ffbd2e?style=flat-square&labelColor=transparent&logoWidth=0" height="10">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/●-27c93f?style=flat-square&labelColor=transparent&logoWidth=0" height="10">
+<span style="font-size: 20px;">🔴 🟡 🟢</span>
 &nbsp;&nbsp;
-<span style="font-family: monospace; color: #58a6ff; font-size: 12px; opacity: 0.6;">root@workspace:~</span>
+<span style="font-family: monospace; color: #58a6ff; font-size: 12px; opacity: 0.6; vertical-align: middle;">root@workspace:~</span>
 </div>
 
 <!-- Content -->
@@ -357,14 +355,12 @@ Container-Make 将 <b>Makefile</b> 的速度、<b>Docker</b> 的隔离性以及 
 <tr>
 <td style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 25px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
 
-<!-- Fake Window Controls -->
+<!-- Fake Window Controls (UNICODE) -->
 
 <div align="left" style="margin-bottom: 15px;">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/●-ff5f56?style=flat-square&labelColor=transparent&logoWidth=0" height="10">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/●-ffbd2e?style=flat-square&labelColor=transparent&logoWidth=0" height="10">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/●-27c93f?style=flat-square&labelColor=transparent&logoWidth=0" height="10">
+<span style="font-size: 20px;">🔴 🟡 🟢</span>
 &nbsp;&nbsp;
-<span style="font-family: monospace; color: #58a6ff; font-size: 12px; opacity: 0.6;">管理员@工作站:~</span>
+<span style="font-family: monospace; color: #58a6ff; font-size: 12px; opacity: 0.6; vertical-align: middle;">管理员@工作站:~</span>
 </div>
 
 <!-- Content -->
