@@ -1,0 +1,7 @@
+{
+  "containerId": "f4f7654402f99b914a5f583e1b589f4a9ecd6cd9f34edaf7bf4f31642414c943",
+  "containerName": "cm-benchmark-test-dev",
+  "createdAt": "2025-12-13T11:24:04.7871637+08:00",
+  "configHash": "fbf5c7b424fdc466",
+  "imageTag": "node:alpine"
+}

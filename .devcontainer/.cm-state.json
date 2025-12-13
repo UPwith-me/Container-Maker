@@ -1,0 +1,8 @@
+{
+  "containerId": "8ce46fa6a09aedc454af903dc92265d603123e0e0474e99f122c98c5e2013197",
+  "containerName": "cm-container-make-dev",
+  "createdAt": "2025-12-13T23:35:57.5921028+08:00",
+  "configHash": "aa5bc927441360fa",
+  "imageTag": "golang:latest",
+  "backend": "docker"
+}

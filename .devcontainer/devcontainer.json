@@ -1,0 +1,5 @@
+{
+  "image": "golang:latest",
+  "name": "container-maker-dev",
+  "postCreateCommand": "go mod download"
+}

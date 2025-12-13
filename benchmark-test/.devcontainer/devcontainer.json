@@ -1,0 +1,4 @@
+{
+  "name": "go",
+  "image": "golang:1.21-alpine"
+}
