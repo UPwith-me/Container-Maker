@@ -23,6 +23,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version info - set by build flags
+var (
+	Version   = "2.0.0"
+	BuildDate = "unknown"
+	GitCommit = "unknown"
+)
+
 var configFile string
 
 var rootCmd = &cobra.Command{

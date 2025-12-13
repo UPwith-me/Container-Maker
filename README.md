@@ -210,6 +210,39 @@ Environment variable override: `CM_BACKEND=podman cm shell`
 </details>
 
 <details>
+<summary><b>🆕 v2.0 New Commands</b></summary>
+
+**AI-Powered Configuration:**
+```bash
+cm ai generate          # Generate devcontainer.json using AI
+cm ai analyze           # Analyze project structure
+```
+
+**Template Marketplace:**
+```bash
+cm marketplace list     # Browse 12+ official templates
+cm marketplace search python
+cm marketplace install go
+```
+
+**Feature Management:**
+```bash
+cm feature list         # List 17+ DevContainer features
+cm feature info node    # Show feature options
+```
+
+**Developer Tools:**
+```bash
+cm clone <repo>         # Clone + auto-setup container
+cm code                 # Open in VS Code with container
+cm share                # Generate shareable link
+cm config get/set       # User configuration
+cm version              # Show version info
+```
+
+</details>
+
+<details>
 <summary><b>🆕 Environment Diagnostics</b></summary>
 
 ```bash
@@ -309,6 +342,37 @@ cm run -- python train.py
 
 # 进入交互式终端
 cm run -- /bin/bash
+```
+
+### 🆕 v2.0 新命令
+
+**AI 智能配置:**
+```bash
+cm ai generate          # AI 生成 devcontainer.json
+cm ai analyze           # 分析项目结构
+```
+
+**模板市场:**
+```bash
+cm marketplace list     # 浏览 12+ 官方模板
+cm marketplace search python
+cm marketplace install go
+```
+
+**Feature 管理:**
+```bash
+cm feature list         # 列出 17+ DevContainer features
+cm feature info node    # 查看 feature 选项
+```
+
+**开发者工具:**
+```bash
+cm clone <repo>         # 克隆仓库 + 自动配置容器
+cm code                 # 用 VS Code 打开容器
+cm share                # 生成分享链接
+cm config get/set       # 用户配置管理
+cm version              # 显示版本信息
+cm doctor               # 环境诊断
 ```
 
 ### ⚙️ 配置指南
