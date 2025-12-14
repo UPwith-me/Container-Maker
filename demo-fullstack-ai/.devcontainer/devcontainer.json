@@ -1,0 +1,76 @@
+{
+    "name": "🚀 Full-Stack AI Platform",
+    // Multi-service setup with Docker Compose
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    // DevContainer Features - automatically installed
+    "features": {
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.11",
+            "installTools": true
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,
+            "configureZshAsDefaultShell": true
+        }
+    },
+    // GPU Support for AI/ML
+    "runArgs": [
+        "--gpus",
+        "all",
+        "--shm-size",
+        "8g"
+    ],
+    // Port forwarding for all services
+    "forwardPorts": [
+        3000, // Frontend (React)
+        8000, // Backend API (FastAPI)
+        8080, // API Gateway
+        5432, // PostgreSQL
+        6379, // Redis
+        9090, // Prometheus
+        3001 // Grafana
+    ],
+    // Environment variables
+    "containerEnv": {
+        "PYTHONUNBUFFERED": "1",
+        "NODE_ENV": "development",
+        "DATABASE_URL": "postgresql://dev:dev@db:5432/aiplatform",
+        "REDIS_URL": "redis://redis:6379",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "HF_HOME": "/workspace/.cache/huggingface"
+    },
+    // VS Code extensions
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-toolsai.jupyter",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "bradlc.vscode-tailwindcss",
+                "ms-azuretools.vscode-docker",
+                "GitHub.copilot"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.formatting.provider": "black",
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    // Lifecycle hooks
+    "postCreateCommand": "bash .devcontainer/setup.sh",
+    "postStartCommand": "echo '🎉 AI Platform Ready! Run: make dev'",
+    // Mount local models cache
+    "mounts": [
+        "source=${localEnv:HOME}/.cache/huggingface,target=/workspace/.cache/huggingface,type=bind,consistency=cached"
+    ]
+}

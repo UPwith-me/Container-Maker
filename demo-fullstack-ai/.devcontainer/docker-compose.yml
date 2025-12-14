@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # Main Development Container
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - huggingface-cache:/workspace/.cache/huggingface
+      - node-modules:/workspace/frontend/node_modules
+    environment:
+      - DATABASE_URL=postgresql://dev:dev@db:5432/aiplatform
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    networks:
+      - aiplatform
+
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: aiplatform
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - aiplatform
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - aiplatform
+
+  # Vector Database for AI embeddings
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - aiplatform
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - aiplatform
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - aiplatform
+
+volumes:
+  postgres-data:
+  huggingface-cache:
+  node-modules:
+  qdrant-data:
+  grafana-data:
+
+
+networks:
+  aiplatform:
+    driver: bridge
