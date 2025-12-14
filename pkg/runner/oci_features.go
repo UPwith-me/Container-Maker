@@ -119,7 +119,7 @@ func parseFeatureRef(ref string) (registry, namespace, name, tag string) {
 }
 
 // downloadFromGitHub downloads from GitHub raw content
-func (d *OCIFeatureDownloader) downloadFromGitHub(ctx context.Context, name, tag string, destPath string) error {
+func (d *OCIFeatureDownloader) downloadFromGitHub(_ context.Context, name, _ string, destPath string) error {
 	// Create destination directory
 	if err := os.MkdirAll(destPath, 0755); err != nil {
 		return err
@@ -278,7 +278,7 @@ func (d *OCIFeatureDownloader) downloadFromOCIWithToken(ctx context.Context, reg
 }
 
 // downloadAndExtractLayer downloads and extracts a layer blob
-func (d *OCIFeatureDownloader) downloadAndExtractLayer(ctx context.Context, registry, namespace, name, digest string, destPath string) error {
+func (d *OCIFeatureDownloader) downloadAndExtractLayer(_ context.Context, registry, namespace, name, digest string, destPath string) error {
 	blobURL := fmt.Sprintf("https://%s/v2/%s/%s/blobs/%s", registry, namespace, name, digest)
 
 	resp, err := http.Get(blobURL)

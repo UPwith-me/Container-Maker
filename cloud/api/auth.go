@@ -222,21 +222,6 @@ func (s *Server) generateTokenPair(user *db.User) (accessToken, refreshToken str
 	return accessToken, refreshToken, nil
 }
 
-// generateSecureAPIKey generates a cryptographically secure API key
-func (s *Server) generateSecureAPIKey() (key, hash string, err error) {
-	keyBytes := make([]byte, 32)
-	if _, err := rand.Read(keyBytes); err != nil {
-		return "", "", err
-	}
-	key = "cm_" + base64.RawURLEncoding.EncodeToString(keyBytes)
-
-	// For production, use bcrypt or argon2 for the hash
-	// For now, we store the key itself as hash (should be hashed in production)
-	hash = key
-
-	return key, hash, nil
-}
-
 // validateJWT parses and validates a JWT token, returning the claims
 func (s *Server) validateJWT(tokenString string) (*Claims, error) {
 	// Remove Bearer prefix if present

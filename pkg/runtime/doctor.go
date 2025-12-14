@@ -237,7 +237,7 @@ func getDiskSpace(path string) (freeGB, totalGB float64, err error) {
 			return 50, 500, nil
 		}
 		var free, total int64
-		fmt.Sscanf(string(output), "%d\n%d", &free, &total)
+		_, _ = fmt.Sscanf(string(output), "%d\n%d", &free, &total)
 		return float64(free) / 1e9, float64(total) / 1e9, nil
 	}
 
@@ -259,8 +259,8 @@ func getDiskSpace(path string) (freeGB, totalGB float64, err error) {
 	}
 
 	var total, free int64
-	fmt.Sscanf(fields[1], "%d", &total)
-	fmt.Sscanf(fields[3], "%d", &free)
+	_, _ = fmt.Sscanf(fields[1], "%d", &total)
+	_, _ = fmt.Sscanf(fields[3], "%d", &free)
 
 	return float64(free) / 1e9, float64(total) / 1e9, nil
 }

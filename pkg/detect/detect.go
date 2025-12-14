@@ -162,7 +162,7 @@ func PromptAutoDetect(result *DetectedProject) (string, bool, error) {
 	fmt.Print("Choice [1]: ")
 
 	var choice string
-	fmt.Scanln(&choice)
+	_, _ = fmt.Scanln(&choice)
 
 	if choice == "" {
 		choice = "1"

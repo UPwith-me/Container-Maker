@@ -1,6 +1,7 @@
 package images
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -149,7 +150,7 @@ func CheckImageExists(imageName string) bool {
 	}
 	defer cli.Close()
 
-	_, _, err = cli.ImageInspectWithRaw(nil, imageName)
+	_, _, err = cli.ImageInspectWithRaw(context.Background(), imageName)
 	return err == nil
 }
 

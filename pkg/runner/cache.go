@@ -155,7 +155,7 @@ func (c *CacheManager) EnsureCacheVolumes(ctx context.Context) error {
 			for _, cache := range caches {
 				// Create volume if it doesn't exist
 				cmd := exec.CommandContext(ctx, c.backend, "volume", "create", cache.VolumeName)
-				cmd.Run() // Ignore errors - volume may already exist
+				_ = cmd.Run() // Ignore errors - volume may already exist
 			}
 		}
 	}
@@ -198,7 +198,7 @@ func (c *CacheManager) CleanCaches(ctx context.Context) error {
 	for _, caches := range LanguageCaches {
 		for _, cache := range caches {
 			cmd := exec.CommandContext(ctx, c.backend, "volume", "rm", "-f", cache.VolumeName)
-			cmd.Run() // Ignore errors
+			_ = cmd.Run() // Ignore errors
 		}
 	}
 	return nil

@@ -233,9 +233,9 @@ func (r *DockerRuntime) ExecInContainer(ctx context.Context, id string, cmd []st
 
 	// Stream output
 	if opts.Tty {
-		io.Copy(os.Stdout, resp.Reader)
+		_, _ = io.Copy(os.Stdout, resp.Reader)
 	} else {
-		stdcopy.StdCopy(os.Stdout, os.Stderr, resp.Reader)
+		_, _ = stdcopy.StdCopy(os.Stdout, os.Stderr, resp.Reader)
 	}
 
 	return nil

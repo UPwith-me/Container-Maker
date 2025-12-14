@@ -85,7 +85,7 @@ func (d *Detector) saveConfig() error {
 	// Read existing config to preserve other fields
 	var outerConfig map[string]interface{}
 	if data, err := os.ReadFile(d.configPath); err == nil {
-		json.Unmarshal(data, &outerConfig)
+		_ = json.Unmarshal(data, &outerConfig)
 	}
 	if outerConfig == nil {
 		outerConfig = make(map[string]interface{})
@@ -159,7 +159,7 @@ func (d *Detector) Detect() *DetectionResult {
 
 	// Update detection time
 	d.config.DetectedAt = time.Now().Format(time.RFC3339)
-	d.saveConfig()
+	_ = d.saveConfig()
 
 	// Set active backend
 	for i := range result.Backends {
@@ -318,11 +318,11 @@ func (d *Detector) AddCustomBackend(name, path, typ string) error {
 	defer d.mu.Unlock()
 
 	// Check if already exists
-	for _, c := range d.config.Custom {
-		if c.Name == name {
+	for i := range d.config.Custom {
+		if d.config.Custom[i].Name == name {
 			// Update existing
-			c.Path = path
-			c.Type = typ
+			d.config.Custom[i].Path = path
+			d.config.Custom[i].Type = typ
 			return d.saveConfig()
 		}
 	}

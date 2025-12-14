@@ -59,8 +59,8 @@ func (s *Server) getInvoicePdfUrl(c echo.Context) error {
 	})
 }
 
-// Updated getUsage with real calculation
-func (s *Server) getUsageDetailed(c echo.Context) error {
+// GetUsageDetailed returns detailed usage information with real calculation
+func (s *Server) GetUsageDetailed(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 
 	now := time.Now()
@@ -73,9 +73,10 @@ func (s *Server) getUsageDetailed(c echo.Context) error {
 
 	for _, r := range records {
 		totalCost += r.TotalCost
-		if r.Type == "cpu" {
+		switch r.Type {
+		case "cpu":
 			cpuHours += r.Quantity
-		} else if r.Type == "gpu" {
+		case "gpu":
 			gpuHours += r.Quantity
 		}
 	}
@@ -108,8 +109,8 @@ func (s *Server) getUsageDetailed(c echo.Context) error {
 	})
 }
 
-// List invoices from database (or Stripe)
-func (s *Server) listInvoicesDetailed(c echo.Context) error {
+// ListInvoicesDetailed retrieves invoices from database (or Stripe)
+func (s *Server) ListInvoicesDetailed(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 
 	invoices, err := s.db.ListInvoicesByUser(userID)

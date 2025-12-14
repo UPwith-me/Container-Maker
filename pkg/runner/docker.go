@@ -173,7 +173,7 @@ func (r *Runner) Run(ctx context.Context, command []string) error {
 	// 2.5 Inject Entrypoint Script
 	if err := r.copyEntrypointToContainer(ctx, resp.ID, entrypointPath); err != nil {
 		// Clean up
-		r.Client.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true})
+		_ = r.Client.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true})
 		return fmt.Errorf("failed to inject entrypoint: %w", err)
 	}
 
@@ -205,7 +205,7 @@ func (r *Runner) Run(ctx context.Context, command []string) error {
 	if isTerminal {
 		// Set initial size
 		width, height, _ := term.GetSize(int(os.Stdin.Fd()))
-		r.Client.ContainerResize(ctx, resp.ID, container.ResizeOptions{
+		_ = r.Client.ContainerResize(ctx, resp.ID, container.ResizeOptions{
 			Height: uint(height),
 			Width:  uint(width),
 		})
@@ -215,7 +215,7 @@ func (r *Runner) Run(ctx context.Context, command []string) error {
 		if err != nil {
 			fmt.Printf("Warning: failed to set raw mode: %v\n", err)
 		} else {
-			defer term.Restore(int(os.Stdin.Fd()), oldState)
+			defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }()
 		}
 	}
 
@@ -225,7 +225,7 @@ func (r *Runner) Run(ctx context.Context, command []string) error {
 		// Note: defer handles restoration on return, but here we might want to ensure clean output
 		// For now, just stop container.
 		timeout := 10 // seconds
-		r.Client.ContainerStop(ctx, resp.ID, container.StopOptions{Timeout: &timeout})
+		_ = r.Client.ContainerStop(ctx, resp.ID, container.StopOptions{Timeout: &timeout})
 	}()
 
 	// 5. Attach / Logs
@@ -253,7 +253,7 @@ func (r *Runner) Run(ctx context.Context, command []string) error {
 	go func() {
 		if isTerminal {
 			// In TTY mode, stdout and stderr are merged, and we copy stdin
-			go io.Copy(attachResp.Conn, os.Stdin)
+			go func() { _, _ = io.Copy(attachResp.Conn, os.Stdin) }()
 			_, err := io.Copy(os.Stdout, attachResp.Reader)
 			outputDone <- err
 		} else {
@@ -627,7 +627,7 @@ func (r *Runner) executeLifecycleHook(ctx context.Context, containerID, name str
 		}
 
 		// Stream output
-		stdcopy.StdCopy(os.Stdout, os.Stderr, resp.Reader)
+		_, _ = stdcopy.StdCopy(os.Stdout, os.Stderr, resp.Reader)
 		resp.Close()
 
 		// Check exit code

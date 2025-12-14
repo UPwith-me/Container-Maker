@@ -127,7 +127,7 @@ func (p *DockerProvider) CreateInstance(ctx context.Context, config InstanceConf
 	if len(portOutput) > 0 {
 		parts := strings.Split(strings.TrimSpace(string(portOutput)), ":")
 		if len(parts) == 2 {
-			fmt.Sscanf(parts[1], "%d", &sshPort)
+			_, _ = fmt.Sscanf(parts[1], "%d", &sshPort)
 		}
 	}
 
@@ -224,7 +224,7 @@ func (p *DockerProvider) StopInstance(ctx context.Context, id string) error {
 
 func (p *DockerProvider) DeleteInstance(ctx context.Context, id string) error {
 	// Stop first
-	p.StopInstance(ctx, id)
+	_ = p.StopInstance(ctx, id)
 
 	cmd := exec.CommandContext(ctx, p.dockerPath, "rm", "-f", id)
 	return cmd.Run()
@@ -275,7 +275,7 @@ func (p *DockerProvider) StreamLogs(ctx context.Context, id string) (<-chan stri
 		defer close(ch)
 		cmd := exec.CommandContext(ctx, p.dockerPath, "logs", "-f", id)
 		stdout, _ := cmd.StdoutPipe()
-		cmd.Start()
+		_ = cmd.Start()
 
 		buf := make([]byte, 1024)
 		for {

@@ -136,7 +136,7 @@ func (r *PersistentRunner) ClearState() error {
 }
 
 // getClient returns the Docker client, initializing if needed
-func (r *PersistentRunner) getClient(ctx context.Context) (*client.Client, error) {
+func (r *PersistentRunner) getClient(_ context.Context) (*client.Client, error) {
 	if r.Client != nil {
 		return r.Client, nil
 	}
@@ -166,7 +166,7 @@ func (r *PersistentRunner) IsContainerRunning(ctx context.Context) (bool, string
 	if r.Runtime != nil {
 		info, err := r.Runtime.InspectContainer(ctx, state.ContainerID)
 		if err != nil {
-			r.ClearState()
+			_ = r.ClearState()
 			return false, "", nil
 		}
 		return info.Running, state.ContainerID, nil
@@ -181,7 +181,7 @@ func (r *PersistentRunner) IsContainerRunning(ctx context.Context) (bool, string
 	inspect, err := cli.ContainerInspect(ctx, state.ContainerID)
 	if err != nil {
 		// Container doesn't exist
-		r.ClearState()
+		_ = r.ClearState()
 		return false, "", nil
 	}
 
@@ -206,7 +206,7 @@ func (r *PersistentRunner) EnsureContainer(ctx context.Context, rebuild bool) (s
 			fmt.Println("⚠️  Configuration has changed since container was created.")
 			fmt.Print("   Rebuild container? [Y/n] ")
 			var response string
-			fmt.Scanln(&response)
+			_, _ = fmt.Scanln(&response)
 			if strings.ToLower(response) != "n" {
 				rebuild = true
 			}
@@ -222,15 +222,15 @@ func (r *PersistentRunner) EnsureContainer(ctx context.Context, rebuild bool) (s
 	if containerID != "" {
 		fmt.Printf("🔄 Stopping existing container '%s'...\n", containerName)
 		if r.Runtime != nil {
-			r.Runtime.StopContainer(ctx, containerID, 10)
-			r.Runtime.RemoveContainer(ctx, containerID, true)
+			_ = r.Runtime.StopContainer(ctx, containerID, 10)
+			_ = r.Runtime.RemoveContainer(ctx, containerID, true)
 		} else {
 			cli, _ := r.getClient(ctx)
 			timeout := 10
 			cli.ContainerStop(ctx, containerID, container.StopOptions{Timeout: &timeout})
 			cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 		}
-		r.ClearState()
+		_ = r.ClearState()
 	}
 
 	// Resolve image
@@ -335,7 +335,7 @@ func (r *PersistentRunner) resolveImage(ctx context.Context) (string, error) {
 
 		// Use beautiful progress display
 		progress := NewPullProgressDisplay()
-		progress.ProcessPullOutput(reader)
+		_ = progress.ProcessPullOutput(reader)
 
 		fmt.Printf("✅ Successfully pulled %s\n", r.Config.Image)
 	}
@@ -626,9 +626,9 @@ func (r *PersistentRunner) Exec(ctx context.Context, command []string) error {
 
 	// Stream output
 	if isTerminal {
-		go io.Copy(attachResp.Conn, os.Stdin)
+		go func() { _, _ = io.Copy(attachResp.Conn, os.Stdin) }()
 	}
-	io.Copy(os.Stdout, attachResp.Reader)
+	_, _ = io.Copy(os.Stdout, attachResp.Reader)
 
 	// Get exit code
 	inspectResp, err := cli.ContainerExecInspect(ctx, execResp.ID)
@@ -655,7 +655,7 @@ func (r *PersistentRunner) Stop(ctx context.Context) error {
 	fmt.Printf("🛑 Stopping container '%s'...\n", containerName)
 
 	if r.Runtime != nil {
-		r.Runtime.StopContainer(ctx, state.ContainerID, 10)
+		_ = r.Runtime.StopContainer(ctx, state.ContainerID, 10)
 		if err := r.Runtime.RemoveContainer(ctx, state.ContainerID, true); err != nil {
 			return fmt.Errorf("failed to remove container: %w", err)
 		}
@@ -675,7 +675,7 @@ func (r *PersistentRunner) Stop(ctx context.Context) error {
 		}
 	}
 
-	r.ClearState()
+	_ = r.ClearState()
 	fmt.Printf("✅ Container '%s' stopped and removed\n", containerName)
 	return nil
 }
@@ -746,19 +746,19 @@ func (r *PersistentRunner) Pause(ctx context.Context) error {
 	// Stop and remove container
 	fmt.Println("🛑 Stopping container to free memory...")
 	if r.Runtime != nil {
-		r.Runtime.StopContainer(ctx, containerID, 10)
-		r.Runtime.RemoveContainer(ctx, containerID, true)
+		_ = r.Runtime.StopContainer(ctx, containerID, 10)
+		_ = r.Runtime.RemoveContainer(ctx, containerID, true)
 	} else {
 		timeout := 10
-		cli.ContainerStop(ctx, containerID, container.StopOptions{Timeout: &timeout})
-		cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
+		_ = cli.ContainerStop(ctx, containerID, container.StopOptions{Timeout: &timeout})
+		_ = cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 	}
 
 	// Update state
 	state.SnapshotImage = snapshotImage
 	state.IsPaused = true
 	state.ContainerID = ""
-	r.SaveState(state)
+	_ = r.SaveState(state)
 
 	fmt.Println("✅ Container paused. Memory freed.")
 	fmt.Println("   Use 'cm shell --resume' to restore your environment.")

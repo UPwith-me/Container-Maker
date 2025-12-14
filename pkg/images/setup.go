@@ -167,7 +167,7 @@ func PullImage(imageName string) error {
 	defer reader.Close()
 
 	// Just consume the output (we already have our own progress indicator)
-	io.Copy(io.Discard, reader)
+	_, _ = io.Copy(io.Discard, reader)
 
 	fmt.Printf("  ✅ %s downloaded\n", imageName)
 	return nil
@@ -202,7 +202,7 @@ func PullSelectedImages(names []string) error {
 		config.Default = names[0]
 	}
 
-	SaveConfig(config)
+	_ = SaveConfig(config)
 
 	fmt.Println("\n🎉 Setup complete!")
 	fmt.Println("   Use 'cm images use <name>' to switch images")

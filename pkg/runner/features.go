@@ -136,7 +136,7 @@ func (f *FeatureInstaller) installFromOCI(ctx context.Context, featureID string,
 }
 
 // getFeatureInstallCommand returns the install command for a feature
-func (f *FeatureInstaller) getFeatureInstallCommand(featureID string, options interface{}) string {
+func (f *FeatureInstaller) getFeatureInstallCommand(featureID string, _ interface{}) string {
 	// Extract base feature name
 	baseName := featureID
 	if idx := strings.LastIndex(featureID, "/"); idx != -1 {

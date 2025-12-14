@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/UPwith-me/Container-Maker/pkg/template"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/UPwith-me/Container-Maker/pkg/template"
 )
 
 // QuickStartAction is a simpler menu item for the quickstart wizard
@@ -165,7 +165,7 @@ func browseTemplates() error {
 	fmt.Println(template.ListTemplates())
 	fmt.Print("\nEnter template name: ")
 	var name string
-	fmt.Scanln(&name)
+	_, _ = fmt.Scanln(&name)
 	if name == "" {
 		return nil
 	}
@@ -175,7 +175,7 @@ func browseTemplates() error {
 func customImage() error {
 	fmt.Print("Enter Docker image: ")
 	var imageName string
-	fmt.Scanln(&imageName)
+	_, _ = fmt.Scanln(&imageName)
 	if imageName == "" {
 		return nil
 	}
@@ -185,8 +185,12 @@ func customImage() error {
   "image": "%s"
 }`, imageName)
 
-	os.MkdirAll(".devcontainer", 0755)
-	os.WriteFile(".devcontainer/devcontainer.json", []byte(content), 0644)
+	if err := os.MkdirAll(".devcontainer", 0755); err != nil {
+		return fmt.Errorf("failed to create .devcontainer directory: %w", err)
+	}
+	if err := os.WriteFile(".devcontainer/devcontainer.json", []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write devcontainer.json: %w", err)
+	}
 	fmt.Println("✅ Created .devcontainer/devcontainer.json")
 	return nil
 }

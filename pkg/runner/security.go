@@ -211,9 +211,10 @@ func (s *SecurityChecker) FormatWarnings() string {
 	critical := 0
 	warning := 0
 	for _, w := range s.warnings {
-		if w.Level == "critical" {
+		switch w.Level {
+		case "critical":
 			critical++
-		} else if w.Level == "warning" {
+		case "warning":
 			warning++
 		}
 	}
@@ -227,11 +228,14 @@ func (s *SecurityChecker) FormatWarnings() string {
 	sb.WriteString(strings.Repeat("─", 50) + "\n")
 
 	for _, w := range s.warnings {
-		icon := "ℹ️"
-		if w.Level == "critical" {
+		var icon string
+		switch w.Level {
+		case "critical":
 			icon = "🔴"
-		} else if w.Level == "warning" {
+		case "warning":
 			icon = "🟡"
+		default:
+			icon = "ℹ️"
 		}
 
 		sb.WriteString(fmt.Sprintf("%s %s\n", icon, w.Title))
@@ -255,7 +259,7 @@ func CheckAndWarn(cfg *config.DevContainerConfig) {
 			if w.Level == "critical" {
 				fmt.Fprint(os.Stderr, "Continue anyway? [y/N] ")
 				var response string
-				fmt.Scanln(&response)
+				_, _ = fmt.Scanln(&response)
 				if response != "y" && response != "Y" {
 					fmt.Println("Aborted.")
 					os.Exit(1)

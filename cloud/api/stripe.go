@@ -153,26 +153,26 @@ func (s *Server) handleInvoiceFailed(event StripeEvent) error {
 	return nil
 }
 
-func (s *Server) handleSubscriptionUpdated(event StripeEvent) error {
+func (s *Server) handleSubscriptionUpdated(_ StripeEvent) error {
 	// Handle subscription changes (plan upgrade/downgrade)
 	// In production, update user's subscription tier in database
 	return nil
 }
 
-func (s *Server) handleSubscriptionDeleted(event StripeEvent) error {
+func (s *Server) handleSubscriptionDeleted(_ StripeEvent) error {
 	// Handle subscription cancellation
 	// In production, downgrade user to free tier
 	return nil
 }
 
-func (s *Server) handleCheckoutCompleted(event StripeEvent) error {
+func (s *Server) handleCheckoutCompleted(_ StripeEvent) error {
 	// Handle successful checkout (new subscription)
 	// In production, link Stripe customer to user
 	return nil
 }
 
 // createStripeCustomer creates a Stripe customer (would use Stripe SDK in production)
-func (s *Server) createStripeCustomer(user *db.User) (string, error) {
+func (s *Server) createStripeCustomer(_ *db.User) (string, error) {
 	// In production with Stripe SDK:
 	// params := &stripe.CustomerParams{
 	//     Email: stripe.String(user.Email),
@@ -185,8 +185,8 @@ func (s *Server) createStripeCustomer(user *db.User) (string, error) {
 	return "cus_" + uuid.New().String()[:8], nil
 }
 
-// createCheckoutSession creates a Stripe Checkout session
-func (s *Server) createCheckoutSession(c echo.Context) error {
+// CreateCheckoutSession creates a Stripe Checkout session
+func (s *Server) CreateCheckoutSession(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 
 	var req struct {

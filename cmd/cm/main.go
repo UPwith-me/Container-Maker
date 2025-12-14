@@ -200,7 +200,7 @@ var initCmd = &cobra.Command{
 		if _, err := os.Stat(configPath); err == nil {
 			fmt.Printf("⚠️  %s already exists. Overwrite? [y/N] ", configPath)
 			var response string
-			fmt.Scanln(&response)
+			_, _ = fmt.Scanln(&response)
 			if strings.ToLower(response) != "y" {
 				fmt.Println("Aborted.")
 				return nil
@@ -655,7 +655,7 @@ var imagesUseCmd = &cobra.Command{
 		devcontainerPath := ".devcontainer/devcontainer.json"
 		if _, err := os.Stat(devcontainerPath); os.IsNotExist(err) {
 			// Create directory
-			os.MkdirAll(".devcontainer", 0755)
+			_ = os.MkdirAll(".devcontainer", 0755)
 		}
 
 		// Write simple config

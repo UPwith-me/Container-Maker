@@ -46,12 +46,12 @@ func CheckAndSetupPath() {
 	fmt.Print("\n  Add to PATH? [Y/n] ")
 
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 
 	if strings.ToLower(response) == "n" {
 		// Mark as done so we don't ask again
-		os.MkdirAll(filepath.Dir(markerFile), 0755)
-		os.WriteFile(markerFile, []byte("skipped"), 0644)
+		_ = os.MkdirAll(filepath.Dir(markerFile), 0755)
+		_ = os.WriteFile(markerFile, []byte("skipped"), 0644)
 		fmt.Println("  Skipped. You can run 'cm install' later to add to PATH.")
 		return
 	}
@@ -63,8 +63,8 @@ func CheckAndSetupPath() {
 	}
 
 	// Mark as done
-	os.MkdirAll(filepath.Dir(markerFile), 0755)
-	os.WriteFile(markerFile, []byte("done"), 0644)
+	_ = os.MkdirAll(filepath.Dir(markerFile), 0755)
+	_ = os.WriteFile(markerFile, []byte("done"), 0644)
 
 	fmt.Println("  ✅ Added to PATH!")
 	fmt.Println()

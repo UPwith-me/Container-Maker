@@ -110,12 +110,5 @@ func (s *Server) updateAdminConfig(c echo.Context) error {
 	})
 }
 
-// Helper to ensure admin user (in future could check user role)
-func (s *Server) isAdmin(userID string) bool {
-	// For now, any authenticated user can access admin
-	// In production, add role check
-	return true
-}
-
 // Unused but useful for generating IDs
 var _ = uuid.New
