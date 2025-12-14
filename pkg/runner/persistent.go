@@ -227,8 +227,8 @@ func (r *PersistentRunner) EnsureContainer(ctx context.Context, rebuild bool) (s
 		} else {
 			cli, _ := r.getClient(ctx)
 			timeout := 10
-			cli.ContainerStop(ctx, containerID, container.StopOptions{Timeout: &timeout})
-			cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
+			_ = cli.ContainerStop(ctx, containerID, container.StopOptions{Timeout: &timeout})
+			_ = cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 		}
 		_ = r.ClearState()
 	}
@@ -816,7 +816,7 @@ func (r *PersistentRunner) Resume(ctx context.Context) error {
 	// Update state
 	state.ContainerID = containerID
 	state.IsPaused = false
-	r.SaveState(state)
+	_ = r.SaveState(state)
 
 	fmt.Println("✅ Container restored from snapshot!")
 	fmt.Println("🚀 Entering shell...")

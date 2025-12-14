@@ -67,31 +67,31 @@ func (s *Server) updateAdminConfig(c echo.Context) error {
 
 	// Save GitHub OAuth
 	if req.GitHubClientID != "" {
-		s.db.SetConfig(db.ConfigGitHubClientID, req.GitHubClientID, false, "GitHub OAuth Client ID", userID)
+		_ = s.db.SetConfig(db.ConfigGitHubClientID, req.GitHubClientID, false, "GitHub OAuth Client ID", userID)
 	}
 	if req.GitHubClientSecret != "" {
-		s.db.SetConfig(db.ConfigGitHubClientSecret, req.GitHubClientSecret, true, "GitHub OAuth Client Secret", userID)
+		_ = s.db.SetConfig(db.ConfigGitHubClientSecret, req.GitHubClientSecret, true, "GitHub OAuth Client Secret", userID)
 	}
 
 	// Save Google OAuth
 	if req.GoogleClientID != "" {
-		s.db.SetConfig(db.ConfigGoogleClientID, req.GoogleClientID, false, "Google OAuth Client ID", userID)
+		_ = s.db.SetConfig(db.ConfigGoogleClientID, req.GoogleClientID, false, "Google OAuth Client ID", userID)
 	}
 	if req.GoogleClientSecret != "" {
-		s.db.SetConfig(db.ConfigGoogleClientSecret, req.GoogleClientSecret, true, "Google OAuth Client Secret", userID)
+		_ = s.db.SetConfig(db.ConfigGoogleClientSecret, req.GoogleClientSecret, true, "Google OAuth Client Secret", userID)
 	}
 
 	// Save Stripe
 	if req.StripePublishable != "" {
-		s.db.SetConfig(db.ConfigStripePublishable, req.StripePublishable, false, "Stripe Publishable Key", userID)
+		_ = s.db.SetConfig(db.ConfigStripePublishable, req.StripePublishable, false, "Stripe Publishable Key", userID)
 	}
 	if req.StripeSecret != "" {
-		s.db.SetConfig(db.ConfigStripeSecret, req.StripeSecret, true, "Stripe Secret Key", userID)
+		_ = s.db.SetConfig(db.ConfigStripeSecret, req.StripeSecret, true, "Stripe Secret Key", userID)
 		// Also update in-memory config for immediate use
 		s.config.StripeSecretKey = req.StripeSecret
 	}
 	if req.StripeWebhook != "" {
-		s.db.SetConfig(db.ConfigStripeWebhook, req.StripeWebhook, true, "Stripe Webhook Secret", userID)
+		_ = s.db.SetConfig(db.ConfigStripeWebhook, req.StripeWebhook, true, "Stripe Webhook Secret", userID)
 	}
 
 	// Update OAuth configs in memory

@@ -132,9 +132,9 @@ func (m *Marketplace) loadTemplates() error {
 	m.templates = m.getDefaultTemplates()
 
 	// Cache the templates
-	os.MkdirAll(m.cacheDir, 0755)
+	_ = os.MkdirAll(m.cacheDir, 0755)
 	if data, err := json.Marshal(m.templates); err == nil {
-		os.WriteFile(cachePath, data, 0644)
+		_ = os.WriteFile(cachePath, data, 0644)
 	}
 
 	return nil

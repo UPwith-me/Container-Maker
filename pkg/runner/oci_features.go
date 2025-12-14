@@ -156,7 +156,7 @@ func (d *OCIFeatureDownloader) downloadFromGitHub(_ context.Context, name, _ str
 
 		// Make install.sh executable
 		if file == "install.sh" {
-			os.Chmod(destFile, 0755)
+			_ = os.Chmod(destFile, 0755)
 		}
 	}
 

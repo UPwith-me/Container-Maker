@@ -112,7 +112,7 @@ func (s *Server) handleInvoicePaid(event StripeEvent) error {
 		UpdatedAt:       time.Now(),
 	}
 
-	s.db.CreateInvoice(dbInvoice)
+	_ = s.db.CreateInvoice(dbInvoice)
 	return nil
 }
 
@@ -145,7 +145,7 @@ func (s *Server) handleInvoiceFailed(event StripeEvent) error {
 		UpdatedAt:       time.Now(),
 	}
 
-	s.db.CreateInvoice(dbInvoice)
+	_ = s.db.CreateInvoice(dbInvoice)
 
 	// TODO: Send notification to user about failed payment
 	// TODO: Consider suspending instances if payment repeatedly fails
@@ -211,7 +211,7 @@ func (s *Server) CreateCheckoutSession(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create customer")
 		}
 		user.StripeCustomerID = customerID
-		s.db.UpdateUser(user)
+		_ = s.db.UpdateUser(user)
 	}
 
 	// In production with Stripe SDK:

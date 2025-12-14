@@ -250,7 +250,9 @@ func (g *Generator) SaveConfig(projectDir, config string) error {
 
 	// Pretty print
 	var buf bytes.Buffer
-	json.Indent(&buf, []byte(config), "", "  ")
+	if err := json.Indent(&buf, []byte(config), "", "  "); err != nil {
+		return fmt.Errorf("failed to format JSON: %w", err)
+	}
 
 	// Create .devcontainer directory
 	devcontainerDir := filepath.Join(projectDir, ".devcontainer")

@@ -186,7 +186,7 @@ func (s *Server) wsWritePump(client *Client) {
 		select {
 		case message, ok := <-client.send:
 			if !ok {
-				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = client.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -194,13 +194,13 @@ func (s *Server) wsWritePump(client *Client) {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			_, _ = w.Write(message)
 
 			// Drain any queued messages
 			n := len(client.send)
 			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'})
-				w.Write(<-client.send)
+				_, _ = w.Write([]byte{'\n'})
+				_, _ = w.Write(<-client.send)
 			}
 
 			if err := w.Close(); err != nil {
@@ -223,9 +223,9 @@ func (s *Server) wsReadPump(client *Client) {
 	}()
 
 	client.conn.SetReadLimit(512)
-	client.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	_ = client.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	client.conn.SetPongHandler(func(string) error {
-		client.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		_ = client.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
 

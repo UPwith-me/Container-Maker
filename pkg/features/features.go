@@ -223,7 +223,7 @@ func downloadAndExtractTarball(url string, destDir string, ref *FeatureRef) (*Fe
 
 			// Make scripts executable
 			if strings.HasSuffix(header.Name, ".sh") {
-				os.Chmod(targetPath, 0755)
+				_ = os.Chmod(targetPath, 0755)
 			}
 
 			// Read install.sh content
@@ -236,7 +236,7 @@ func downloadAndExtractTarball(url string, destDir string, ref *FeatureRef) (*Fe
 			if header.Name == "devcontainer-feature.json" ||
 				strings.HasSuffix(header.Name, "/devcontainer-feature.json") {
 				content, _ := os.ReadFile(targetPath)
-				json.Unmarshal(content, feature)
+				_ = json.Unmarshal(content, feature)
 			}
 		}
 	}

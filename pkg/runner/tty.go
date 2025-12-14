@@ -36,12 +36,12 @@ func (t *TTYManager) StartResizeMonitor(ctx context.Context) {
 
 	go func() {
 		// Initial resize
-		t.resizeContainer(ctx)
+		_ = t.resizeContainer(ctx)
 
 		for {
 			select {
 			case <-t.resizeChan:
-				t.resizeContainer(ctx)
+				_ = t.resizeContainer(ctx)
 			case <-t.done:
 				return
 			case <-ctx.Done():

@@ -33,7 +33,6 @@ type Syncer struct {
 	running   bool
 	lastSync  time.Time
 	syncQueue chan string // Queue of files to sync
-	debouncer *time.Timer
 }
 
 // DefaultExcludes returns common patterns to exclude from sync

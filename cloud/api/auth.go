@@ -145,7 +145,7 @@ func (s *Server) refreshToken(c echo.Context) error {
 	}
 
 	// Delete old session (rotate)
-	s.db.DeleteSession(req.RefreshToken)
+	_ = s.db.DeleteSession(req.RefreshToken)
 
 	// Generate new tokens
 	accessToken, refreshToken, err := s.generateTokenPair(user)
@@ -168,10 +168,10 @@ func (s *Server) logout(c echo.Context) error {
 	var req struct {
 		RefreshToken string `json:"refresh_token"`
 	}
-	c.Bind(&req)
+	_ = c.Bind(&req)
 
 	if req.RefreshToken != "" {
-		s.db.DeleteSession(req.RefreshToken)
+		_ = s.db.DeleteSession(req.RefreshToken)
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "logged out"})

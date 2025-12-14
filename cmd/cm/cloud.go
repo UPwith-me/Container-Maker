@@ -118,7 +118,7 @@ func cloudLoginInteractive() error {
 	fmt.Println()
 	fmt.Print("Enter API key or token: ")
 	var token string
-	fmt.Scanln(&token)
+	_, _ = fmt.Scanln(&token)
 
 	if token == "" {
 		return fmt.Errorf("authentication cancelled")
@@ -135,7 +135,7 @@ var cloudLogoutCmd = &cobra.Command{
 		if cfg != nil {
 			cfg.CloudAPIKey = ""
 			cfg.CloudToken = ""
-			userconfig.Save(cfg)
+			_ = userconfig.Save(cfg)
 		}
 		fmt.Println("✅ Logged out successfully")
 		return nil
@@ -158,7 +158,7 @@ var cloudInstancesCmd = &cobra.Command{
 		defer resp.Body.Close()
 
 		var instances []map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&instances)
+		_ = json.NewDecoder(resp.Body).Decode(&instances)
 
 		if len(instances) == 0 {
 			fmt.Println("No running instances.")
@@ -249,7 +249,7 @@ Providers:
 		}
 
 		var result map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&result)
+		_ = json.NewDecoder(resp.Body).Decode(&result)
 
 		fmt.Printf("✅ Instance created: %s\n", result["id"])
 		fmt.Println()
@@ -279,7 +279,7 @@ var cloudConnectCmd = &cobra.Command{
 		defer resp.Body.Close()
 
 		var sshConfig map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&sshConfig)
+		_ = json.NewDecoder(resp.Body).Decode(&sshConfig)
 
 		host := sshConfig["host"].(string)
 		port := int(sshConfig["port"].(float64))
@@ -360,7 +360,7 @@ var cloudProvidersCmd = &cobra.Command{
 		defer resp.Body.Close()
 
 		var providers []map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&providers)
+		_ = json.NewDecoder(resp.Body).Decode(&providers)
 
 		fmt.Println("☁️  Available Cloud Providers")
 		fmt.Println()
@@ -391,7 +391,7 @@ var cloudBillingCmd = &cobra.Command{
 		defer resp.Body.Close()
 
 		var usage map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&usage)
+		_ = json.NewDecoder(resp.Body).Decode(&usage)
 
 		currentMonth := usage["current_month"].(map[string]interface{})
 

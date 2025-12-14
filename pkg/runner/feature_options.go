@@ -217,7 +217,9 @@ func ListOfficialFeatures() ([]string, error) {
 		Name string `json:"name"`
 		Type string `json:"type"`
 	}
-	json.Unmarshal(data, &contents)
+	if err := json.Unmarshal(data, &contents); err != nil {
+		return nil, fmt.Errorf("failed to parse features list: %w", err)
+	}
 
 	var features []string
 	for _, c := range contents {

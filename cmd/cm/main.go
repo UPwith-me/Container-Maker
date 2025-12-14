@@ -722,7 +722,7 @@ var imagesPullCmd = &cobra.Command{
 		}
 
 		preset.Downloaded = true
-		images.SaveConfig(cfg)
+		_ = images.SaveConfig(cfg)
 
 		return nil
 	},

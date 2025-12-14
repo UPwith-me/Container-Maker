@@ -292,7 +292,7 @@ func (r *PodmanRuntime) WaitContainer(ctx context.Context, id string) (<-chan in
 			return
 		}
 		var exitCode int64
-		fmt.Sscanf(strings.TrimSpace(string(output)), "%d", &exitCode)
+		_, _ = fmt.Sscanf(strings.TrimSpace(string(output)), "%d", &exitCode)
 		exitCh <- exitCode
 	}()
 

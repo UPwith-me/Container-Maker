@@ -109,7 +109,7 @@ func runAIGenerate(cmd *cobra.Command, args []string) error {
 	// Confirm
 	fmt.Print("💾 Save this configuration? [Y/n] ")
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 
 	if response != "" && response != "y" && response != "Y" {
 		fmt.Println("❌ Cancelled")

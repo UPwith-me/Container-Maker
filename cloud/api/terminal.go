@@ -56,11 +56,11 @@ func (s *Server) HandleTerminalWebSocket(c echo.Context) error {
 	defer conn.Close()
 
 	// Send welcome message
-	conn.WriteJSON(TerminalMessage{
+	_ = conn.WriteJSON(TerminalMessage{
 		Type:    "output",
 		Content: "Connected to " + instance.Name,
 	})
-	conn.WriteJSON(TerminalMessage{
+	_ = conn.WriteJSON(TerminalMessage{
 		Type:    "output",
 		Content: "Container ID: " + instance.ProviderID,
 	})
@@ -68,7 +68,7 @@ func (s *Server) HandleTerminalWebSocket(c echo.Context) error {
 	// Get provider for this instance
 	provider, err := s.providers.Get(providers.ProviderType(instance.Provider))
 	if err != nil {
-		conn.WriteJSON(TerminalMessage{
+		_ = conn.WriteJSON(TerminalMessage{
 			Type:    "error",
 			Content: "Provider not available: " + instance.Provider,
 		})
@@ -92,7 +92,7 @@ func (s *Server) HandleTerminalWebSocket(c echo.Context) error {
 			cancel()
 
 			if err != nil {
-				conn.WriteJSON(TerminalMessage{
+				_ = conn.WriteJSON(TerminalMessage{
 					Type:    "error",
 					Content: "Error: " + err.Error(),
 				})
@@ -101,12 +101,12 @@ func (s *Server) HandleTerminalWebSocket(c echo.Context) error {
 				if stderr != "" {
 					output = stderr
 				}
-				conn.WriteJSON(TerminalMessage{
+				_ = conn.WriteJSON(TerminalMessage{
 					Type:    "output",
 					Content: output,
 				})
 			} else {
-				conn.WriteJSON(TerminalMessage{
+				_ = conn.WriteJSON(TerminalMessage{
 					Type:    "output",
 					Content: stdout,
 				})
@@ -160,7 +160,7 @@ func (s *Server) HandleLogStreamWebSocket(c echo.Context) error {
 	logChan, err := provider.StreamLogs(ctx, instance.ProviderID)
 	if err != nil {
 		// Send error and fallback to simulated logs
-		conn.WriteJSON(LogLine{
+		_ = conn.WriteJSON(LogLine{
 			Timestamp: time.Now().Format(time.RFC3339),
 			Level:     "error",
 			Message:   "Could not connect to container logs: " + err.Error(),

@@ -29,7 +29,7 @@ type Config struct {
 func DefaultSQLiteConfig() Config {
 	homeDir, _ := os.UserHomeDir()
 	dbPath := filepath.Join(homeDir, ".cm", "cloud.db")
-	os.MkdirAll(filepath.Dir(dbPath), 0755)
+	_ = os.MkdirAll(filepath.Dir(dbPath), 0755)
 
 	return Config{
 		Driver: "sqlite",

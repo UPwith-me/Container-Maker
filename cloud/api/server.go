@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -47,8 +46,7 @@ type Server struct {
 	providers *providers.Manager
 	wsHub     *WSHub
 
-	// Legacy in-memory (to be removed after full DB migration)
-	mu        sync.RWMutex
+	// Legacy in-memory stores (to be removed after full DB migration)
 	instances map[string]map[string]interface{}
 	apiKeys   map[string]map[string]interface{}
 }
@@ -165,7 +163,7 @@ func (s *Server) setupRoutes() {
 
 			stat, _ := indexFile.Stat()
 			content := make([]byte, stat.Size())
-			indexFile.Read(content)
+			_, _ = indexFile.Read(content)
 
 			return c.HTMLBlob(http.StatusOK, content)
 		})
@@ -324,7 +322,7 @@ func (s *Server) validateAPIKey(c echo.Context, apiKey string, next echo.Handler
 
 func (s *Server) generateAPIKey() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	return "cm_" + base64.RawURLEncoding.EncodeToString(b)
 }
 
@@ -375,7 +373,7 @@ func (s *Server) createAPIKey(c echo.Context) error {
 		Name   string `json:"name"`
 		Scopes string `json:"scopes"`
 	}
-	c.Bind(&req)
+	_ = c.Bind(&req)
 
 	key := s.generateAPIKey()
 
@@ -542,7 +540,7 @@ func (s *Server) createInstance(c echo.Context) error {
 			dbInstance.SSHPort = providerInst.SSHPort
 		}
 		dbInstance.UpdatedAt = time.Now().UTC()
-		s.db.UpdateInstance(dbInstance)
+		_ = s.db.UpdateInstance(dbInstance)
 	}()
 
 	return c.JSON(http.StatusCreated, dbInstance)
@@ -569,7 +567,7 @@ func (s *Server) startInstance(c echo.Context) error {
 	instance.Status = "running"
 	now := time.Now().UTC()
 	instance.StartedAt = &now
-	s.db.UpdateInstance(instance)
+	_ = s.db.UpdateInstance(instance)
 
 	return c.JSON(http.StatusOK, instance)
 }
@@ -585,7 +583,7 @@ func (s *Server) stopInstance(c echo.Context) error {
 	instance.Status = "stopped"
 	now := time.Now().UTC()
 	instance.StoppedAt = &now
-	s.db.UpdateInstance(instance)
+	_ = s.db.UpdateInstance(instance)
 
 	return c.JSON(http.StatusOK, instance)
 }

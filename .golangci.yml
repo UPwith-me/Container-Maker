@@ -1,0 +1,62 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+  disable:
+    - wrapcheck
+    - wsl
+    - gochecknoglobals
+    - exhaustruct
+
+linters-settings:
+  errcheck:
+    # Don't check for error returns on these functions (common patterns)
+    exclude-functions:
+      - fmt.Fprintf
+      - fmt.Printf
+      - fmt.Print
+      - fmt.Println
+      - fmt.Fprint
+      - fmt.Fprintln
+      - (io.Writer).Write
+      - (*os.File).Close
+      - (io.ReadCloser).Close
+      - (*github.com/labstack/echo/v4.Echo).Close
+      - (*database/sql.Rows).Close
+      - (*gorm.io/gorm.DB).Close
+  staticcheck:
+    checks:
+      - all
+      - "-SA1019" # Ignore deprecated warnings (ImageInspectWithRaw, middleware.Logger)
+
+issues:
+  exclude-rules:
+    # Ignore error checks in test files
+    - path: _test\.go
+      linters:
+        - errcheck
+    # Ignore deprecated warnings (SA1019) - will fix in future update
+    - linters:
+        - staticcheck
+      text: "SA1019"
+    # Ignore unused warnings for watch.go fields (used for future debouncing)
+    - path: pkg/watch/watch.go
+      linters:
+        - unused
+    # Ignore unused warnings for websocket hub fields  
+    - path: cloud/api/websocket.go
+      linters:
+        - unused
+      text: "field.*is unused"
+    # Ignore empty branch warnings
+    - linters:
+        - staticcheck
+      text: "SA9003"

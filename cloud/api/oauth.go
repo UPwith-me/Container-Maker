@@ -341,7 +341,7 @@ func (s *Server) findOrCreateOAuthUser(provider, providerID, email, name, avatar
 			// Link GitHub to existing account
 			user.GitHubID = providerID
 			user.AvatarURL = avatarURL
-			s.db.UpdateUser(user)
+			_ = s.db.UpdateUser(user)
 		}
 	case "google":
 		user, err = s.db.GetUserByEmail(email)
@@ -349,7 +349,7 @@ func (s *Server) findOrCreateOAuthUser(provider, providerID, email, name, avatar
 			// Link Google to existing account
 			user.GoogleID = providerID
 			user.AvatarURL = avatarURL
-			s.db.UpdateUser(user)
+			_ = s.db.UpdateUser(user)
 		}
 	}
 
