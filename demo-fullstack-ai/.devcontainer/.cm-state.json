@@ -1,0 +1,8 @@
+{
+  "containerId": "3561bba5173dccfef3777e95bf68d00d11066bf8b1e95b8e4a8e5c7a9adef470",
+  "containerName": "cm-demo-fullstack-ai-dev",
+  "createdAt": "2025-12-14T13:14:02.5363369+08:00",
+  "configHash": "36961319c7be7b6b",
+  "imageTag": "python:3.11-slim",
+  "backend": "docker"
+}

@@ -460,6 +460,27 @@ func (r *PersistentRunner) createContainer(ctx context.Context, name, imageTag s
 			cfg.Env = append(cfg.Env, fmt.Sprintf("%s=%s", k, v))
 		}
 
+		// Add port bindings from forwardPorts
+		cfg.PortBindings = make(map[string][]runtime.PortBinding)
+		for _, p := range r.Config.ForwardPorts {
+			var port string
+			switch v := p.(type) {
+			case float64:
+				port = fmt.Sprintf("%d", int(v))
+			case string:
+				port = v
+			default:
+				continue
+			}
+			portProto := port + "/tcp"
+			cfg.PortBindings[portProto] = []runtime.PortBinding{
+				{HostIP: "0.0.0.0", HostPort: port},
+			}
+		}
+		if len(cfg.PortBindings) > 0 {
+			fmt.Printf("🔌 Forwarding ports: %v\n", r.Config.ForwardPorts)
+		}
+
 		return r.Runtime.CreateContainer(ctx, cfg)
 	}
 
