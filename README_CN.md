@@ -48,6 +48,7 @@
   - [智能缓存](#智能缓存)
   - [端口转发](#端口转发)
   - [文件监听](#文件监听-cm-watch)
+  - [远程开发](#远程开发-cm-remote)
   - [安全扫描](#安全扫描)
 - [云控制平面](#️-云控制平面)
   - [功能概览](#功能概览)
@@ -343,6 +344,40 @@ cm doctor --security
 - ⚠️ 敏感环境变量
 - ✅ 建议使用 Rootless Docker
 
+### 远程开发 (`cm remote`)
+
+无缝连接远程机器并同步文件：
+
+```bash
+# 添加远程主机
+cm remote add myserver user@192.168.1.100
+
+# 列出已配置的远程主机
+cm remote list
+
+# 测试连接
+cm remote test myserver
+
+# 设置当前使用的远程主机
+cm remote use myserver
+
+# 在远程容器中打开 shell
+cm remote shell
+```
+
+**文件同步：**
+
+```bash
+# 启动持续同步（本地 → 远程）
+cm remote sync start myserver
+
+# 一次性推送到远程
+cm remote sync push
+
+# 从远程拉取
+cm remote sync pull
+```
+
 ---
 
 ## ☁️ 云控制平面
@@ -523,6 +558,30 @@ cm status
 | `cm watch` | 监听文件变更 | `cm watch --run "pytest"` |
 | `cm backend` | 管理运行时 | `cm backend list` |
 | `cm clone` | 克隆 + 进入容器 | `cm clone github.com/user/repo` |
+| `cm share` | 生成分享链接 | `cm share --format markdown` |
+| `cm images` | 管理预设镜像 | `cm images list` |
+| `cm make` | 运行 Makefile 目标 | `cm make build` |
+
+### 远程开发
+
+| 命令 | 描述 | 示例 |
+|------|------|------|
+| `cm remote add` | 添加远程主机 | `cm remote add server user@host` |
+| `cm remote list` | 列出远程主机 | `cm remote list` |
+| `cm remote use` | 设置活动远程 | `cm remote use server` |
+| `cm remote test` | 测试连接 | `cm remote test server` |
+| `cm remote shell` | 远程 Shell | `cm remote shell` |
+| `cm remote sync start` | 启动文件同步 | `cm remote sync start` |
+| `cm remote sync push` | 推送到远程 | `cm remote sync push` |
+| `cm remote sync pull` | 从远程拉取 | `cm remote sync pull` |
+
+### 团队与组织
+
+| 命令 | 描述 | 示例 |
+|------|------|------|
+| `cm team set` | 设置组织 | `cm team set mycompany` |
+| `cm team templates` | 设置模板仓库 | `cm team templates <url>` |
+| `cm team info` | 显示团队配置 | `cm team info` |
 
 ---
 

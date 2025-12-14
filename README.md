@@ -48,6 +48,7 @@
   - [Intelligent Caching](#intelligent-caching)
   - [Port Forwarding](#port-forwarding)
   - [File Watching](#file-watching-cm-watch)
+  - [Remote Development](#remote-development-cm-remote)
   - [Security Scanning](#security-scanning)
 - [Cloud Control Plane](#-cloud-control-plane)
   - [Overview](#overview)
@@ -343,6 +344,40 @@ Detects:
 - ⚠️ Sensitive environment variables
 - ✅ Suggests Rootless Docker alternatives
 
+### Remote Development (`cm remote`)
+
+Connect to remote machines and sync files seamlessly:
+
+```bash
+# Add a remote host
+cm remote add myserver user@192.168.1.100
+
+# List configured remotes
+cm remote list
+
+# Test connection
+cm remote test myserver
+
+# Set active remote
+cm remote use myserver
+
+# Open shell on remote container
+cm remote shell
+```
+
+**File Synchronization:**
+
+```bash
+# Start continuous sync (local → remote)
+cm remote sync start myserver
+
+# One-time push to remote
+cm remote sync push
+
+# Pull from remote
+cm remote sync pull
+```
+
 ---
 
 ## ☁️ Cloud Control Plane
@@ -523,6 +558,30 @@ Features:
 | `cm watch` | Watch file changes | `cm watch --run "pytest"` |
 | `cm backend` | Manage runtimes | `cm backend list` |
 | `cm clone` | Clone + enter container | `cm clone github.com/user/repo` |
+| `cm share` | Generate shareable link | `cm share --format markdown` |
+| `cm images` | Manage preset images | `cm images list` |
+| `cm make` | Run Makefile targets | `cm make build` |
+
+### Remote Development
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `cm remote add` | Add remote host | `cm remote add server user@host` |
+| `cm remote list` | List remote hosts | `cm remote list` |
+| `cm remote use` | Set active remote | `cm remote use server` |
+| `cm remote test` | Test connection | `cm remote test server` |
+| `cm remote shell` | Shell on remote | `cm remote shell` |
+| `cm remote sync start` | Start file sync | `cm remote sync start` |
+| `cm remote sync push` | Push to remote | `cm remote sync push` |
+| `cm remote sync pull` | Pull from remote | `cm remote sync pull` |
+
+### Team & Organization
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `cm team set` | Set organization | `cm team set mycompany` |
+| `cm team templates` | Set templates repo | `cm team templates <url>` |
+| `cm team info` | Show team config | `cm team info` |
 
 ---
 
