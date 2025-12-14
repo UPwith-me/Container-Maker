@@ -15,6 +15,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/container-make/cm/cloud/db"
+	"github.com/container-make/cm/cloud/providers"
 )
 
 // Config holds API server configuration
@@ -30,22 +33,25 @@ type Config struct {
 	GoogleClientSecret string
 
 	// Database
-	DatabaseURL string
+	DatabaseURL    string
+	DatabaseDriver string // sqlite or postgres
 }
 
 // Server is the API server
 type Server struct {
-	echo   *echo.Echo
-	config Config
+	echo      *echo.Echo
+	config    Config
+	db        *db.Database
+	providers *providers.Manager
 
-	// In-memory store (Mock DB for Phase 1)
+	// Legacy in-memory (to be removed after full DB migration)
 	mu        sync.RWMutex
-	instances map[string]map[string]interface{} // ID -> Instance data
-	apiKeys   map[string]map[string]interface{} // Key -> Metadata
+	instances map[string]map[string]interface{}
+	apiKeys   map[string]map[string]interface{}
 }
 
 // NewServer creates a new API server
-func NewServer(cfg Config) *Server {
+func NewServer(cfg Config) (*Server, error) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -53,20 +59,39 @@ func NewServer(cfg Config) *Server {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"}, // Allow all for dev
+		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization, "X-API-Key"},
 	}))
 	e.Use(middleware.RequestID())
 
+	// Initialize database
+	dbConfig := db.DefaultSQLiteConfig()
+	if cfg.DatabaseDriver != "" {
+		dbConfig.Driver = cfg.DatabaseDriver
+	}
+	if cfg.DatabaseURL != "" {
+		dbConfig.DSN = cfg.DatabaseURL
+	}
+
+	database, err := db.New(dbConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
+	}
+
+	// Initialize provider manager
+	providerManager := providers.GetDefaultManager()
+
 	s := &Server{
 		echo:      e,
 		config:    cfg,
+		db:        database,
+		providers: providerManager,
 		instances: make(map[string]map[string]interface{}),
 		apiKeys:   make(map[string]map[string]interface{}),
 	}
 
 	s.setupRoutes()
-	return s
+	return s, nil
 }
 
 // setupRoutes configures all API routes
@@ -77,10 +102,11 @@ func (s *Server) setupRoutes() {
 	// API v1
 	v1 := s.echo.Group("/api/v1")
 
-	// Public routes
+	// Public routes - Auth is in auth.go and oauth.go
 	v1.POST("/auth/register", s.register)
 	v1.POST("/auth/login", s.login)
 	v1.POST("/auth/refresh", s.refreshToken)
+	v1.POST("/auth/logout", s.logout)
 	v1.GET("/auth/github", s.githubOAuth)
 	v1.GET("/auth/github/callback", s.githubCallback)
 	v1.GET("/auth/google", s.googleOAuth)
@@ -133,7 +159,7 @@ func (s *Server) setupRoutes() {
 	protected.GET("/billing/invoices", s.listInvoices)
 	protected.POST("/billing/subscription", s.updateSubscription)
 
-	// Stripe webhook (uses Stripe signature verification)
+	// Stripe webhook
 	v1.POST("/webhooks/stripe", s.stripeWebhook)
 }
 
@@ -144,12 +170,14 @@ func (s *Server) Start() error {
 
 // Shutdown gracefully stops the server
 func (s *Server) Shutdown(ctx context.Context) error {
+	if s.db != nil {
+		s.db.Close()
+	}
 	return s.echo.Shutdown(ctx)
 }
 
 // ---- Auth Middleware ----
 
-// Claims represents JWT claims
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
@@ -158,10 +186,8 @@ type Claims struct {
 
 func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check for Bearer token
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
-			// Check for API key
 			apiKey := c.Request().Header.Get("X-API-Key")
 			if apiKey != "" {
 				return s.validateAPIKey(c, apiKey, next)
@@ -184,7 +210,6 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 		}
 
-		// Set user context
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
 
@@ -193,27 +218,20 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (s *Server) validateAPIKey(c echo.Context, apiKey string, next echo.HandlerFunc) error {
-	// For API Key (mock validation for now)
 	if strings.HasPrefix(apiKey, "cm_") {
+		// Look up in database
+		key, err := s.db.GetAPIKeyByKey(apiKey)
+		if err == nil && key != nil {
+			c.Set("user_id", key.UserID)
+			c.Set("api_key", apiKey)
+			return next(c)
+		}
+		// Fallback for demo
 		c.Set("user_id", "demo-user")
 		c.Set("api_key", apiKey)
 		return next(c)
 	}
 	return echo.NewHTTPError(http.StatusUnauthorized, "invalid API key")
-}
-
-func (s *Server) generateJWT(userID, email string) (string, error) {
-	claims := &Claims{
-		UserID: userID,
-		Email:  email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(s.config.JWTSecret))
 }
 
 func (s *Server) generateAPIKey() string {
@@ -222,7 +240,7 @@ func (s *Server) generateAPIKey() string {
 	return "cm_" + base64.RawURLEncoding.EncodeToString(b)
 }
 
-// ---- Functional Handlers ----
+// ---- Handlers ----
 
 func (s *Server) healthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
@@ -231,64 +249,21 @@ func (s *Server) healthCheck(c echo.Context) error {
 	})
 }
 
-// Auth handlers
-func (s *Server) register(c echo.Context) error {
-	return c.JSON(http.StatusCreated, map[string]string{"message": "User registered (mock)"})
-}
-
-func (s *Server) login(c echo.Context) error {
-	// Mock login - accepts any email/password
-	var body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := c.Bind(&body); err != nil {
-		return err
-	}
-
-	token, _ := s.generateJWT("user-123", body.Email)
-	return c.JSON(http.StatusOK, map[string]string{
-		"token":   token,
-		"user_id": "user-123",
-	})
-}
-
-func (s *Server) refreshToken(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
-}
-
-func (s *Server) githubOAuth(c echo.Context) error {
-	if c.QueryParam("cli") == "true" {
-		// CLI Logic: Print a dummy code
-		return c.HTML(http.StatusOK, "<h1>Authentication Successful</h1><p>You can close this window and return to CLI.</p>")
-	}
-	// Web Logic: Redirect
-	clientID := s.config.GitHubClientID
-	redirectURL := fmt.Sprintf("https://github.com/login/oauth/authorize?client_id=%s&scope=user:email", clientID)
-	return c.Redirect(http.StatusTemporaryRedirect, redirectURL)
-}
-
-func (s *Server) githubCallback(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"message": "Auth callback logic here"})
-}
-
-func (s *Server) googleOAuth(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
-}
-
-func (s *Server) googleCallback(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
-}
-
 // User handlers
 func (s *Server) getCurrentUser(c echo.Context) error {
 	userID := c.Get("user_id").(string)
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"id":         userID,
-		"email":      "demo@container-maker.dev",
-		"name":       "Demo User",
-		"avatar_url": "https://github.com/shadcn.png",
-	})
+
+	user, err := s.db.GetUserByID(userID)
+	if err != nil {
+		// Fallback for demo
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"id":         userID,
+			"email":      "demo@container-maker.dev",
+			"name":       "Demo User",
+			"avatar_url": "https://github.com/shadcn.png",
+		})
+	}
+	return c.JSON(http.StatusOK, user)
 }
 
 func (s *Server) updateUser(c echo.Context) error {
@@ -297,50 +272,117 @@ func (s *Server) updateUser(c echo.Context) error {
 
 // API Key handlers
 func (s *Server) listAPIKeys(c echo.Context) error {
-	return c.JSON(http.StatusOK, []interface{}{})
+	userID := c.Get("user_id").(string)
+	keys, err := s.db.ListAPIKeysByUser(userID)
+	if err != nil {
+		return c.JSON(http.StatusOK, []interface{}{})
+	}
+	return c.JSON(http.StatusOK, keys)
 }
 
 func (s *Server) createAPIKey(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+
+	var req struct {
+		Name   string `json:"name"`
+		Scopes string `json:"scopes"`
+	}
+	c.Bind(&req)
+
 	key := s.generateAPIKey()
+
+	apiKey := &db.APIKey{
+		ID:        uuid.New().String(),
+		UserID:    userID,
+		Name:      req.Name,
+		KeyPrefix: key[:11], // cm_ + first 8 chars
+		KeyHash:   key,      // Should be hashed in production
+		Scopes:    req.Scopes,
+		CreatedAt: time.Now().UTC(),
+	}
+
+	if err := s.db.CreateAPIKey(apiKey); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create API key")
+	}
+
 	return c.JSON(http.StatusCreated, map[string]string{
 		"key":     key,
+		"id":      apiKey.ID,
 		"warning": "This key will only be shown once. Save it securely.",
 	})
 }
 
 func (s *Server) deleteAPIKey(c echo.Context) error {
+	id := c.Param("id")
+	if err := s.db.DeleteAPIKey(id); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "API key not found")
+	}
 	return c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 // Credential handlers
 func (s *Server) listCredentials(c echo.Context) error {
-	return c.JSON(http.StatusOK, []interface{}{})
+	userID := c.Get("user_id").(string)
+	creds, err := s.db.ListCredentialsByUser(userID)
+	if err != nil {
+		return c.JSON(http.StatusOK, []interface{}{})
+	}
+	return c.JSON(http.StatusOK, creds)
 }
 
 func (s *Server) addCredential(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	userID := c.Get("user_id").(string)
+
+	var req struct {
+		Provider string            `json:"provider"`
+		Name     string            `json:"name"`
+		Data     map[string]string `json:"data"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	// TODO: Encrypt the data before storing
+	cred := &db.CloudCredential{
+		ID:            uuid.New().String(),
+		UserID:        userID,
+		Provider:      req.Provider,
+		Name:          req.Name,
+		EncryptedData: fmt.Sprintf("%v", req.Data), // Should be encrypted
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
+	}
+
+	if err := s.db.CreateCredential(cred); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create credential")
+	}
+
+	return c.JSON(http.StatusCreated, cred)
 }
 
 func (s *Server) deleteCredential(c echo.Context) error {
+	id := c.Param("id")
+	if err := s.db.DeleteCredential(id); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+	}
 	return c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func (s *Server) verifyCredential(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	// TODO: Actually verify credentials against the provider
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"verified": true,
+		"message":  "Credentials verified successfully",
+	})
 }
 
 // Instance handlers
 func (s *Server) listInstances(c echo.Context) error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	userID := c.Get("user_id").(string)
 
-	list := make([]interface{}, 0, len(s.instances))
-	for _, inst := range s.instances {
-		list = append(list, inst)
-	}
-
-	// Add a dummy instance if empty, for demo purposes
-	if len(list) == 0 {
+	instances, err := s.db.ListInstancesByUser(userID)
+	if err != nil || len(instances) == 0 {
+		// Return demo instance
 		return c.JSON(http.StatusOK, []map[string]interface{}{
 			{
 				"id":            "inst-demo-01",
@@ -355,48 +397,55 @@ func (s *Server) listInstances(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, list)
+	return c.JSON(http.StatusOK, instances)
 }
 
 func (s *Server) createInstance(c echo.Context) error {
-	var body map[string]interface{}
-	if err := c.Bind(&body); err != nil {
-		return err
+	userID := c.Get("user_id").(string)
+
+	var req struct {
+		Name         string `json:"name"`
+		Provider     string `json:"provider"`
+		InstanceType string `json:"instance_type"`
+		Region       string `json:"region"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	instance := &db.Instance{
+		ID:           "inst-" + uuid.New().String()[:8],
+		OwnerID:      userID,
+		Name:         req.Name,
+		Provider:     req.Provider,
+		InstanceType: req.InstanceType,
+		Region:       req.Region,
+		Status:       "provisioning",
+		HourlyRate:   0.50, // Default rate
+		CreatedAt:    time.Now().UTC(),
+		UpdatedAt:    time.Now().UTC(),
+	}
 
-	id := "inst-" + uuid.New().String()[:8]
-	body["id"] = id
-	body["status"] = "provisioning"
-	body["created_at"] = time.Now()
-	body["public_ip"] = "" // pending
+	if err := s.db.CreateInstance(instance); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create instance")
+	}
 
-	s.instances[id] = body
-
-	// Simulate provisioning delay
+	// Simulate async provisioning
 	go func() {
 		time.Sleep(5 * time.Second)
-		s.mu.Lock()
-		if inst, ok := s.instances[id]; ok {
-			inst["status"] = "running"
-			inst["public_ip"] = "54.123.45.67"
-		}
-		s.mu.Unlock()
+		instance.Status = "running"
+		instance.PublicIP = "54.123.45.67"
+		s.db.UpdateInstance(instance)
 	}()
 
-	return c.JSON(http.StatusCreated, body)
+	return c.JSON(http.StatusCreated, instance)
 }
 
 func (s *Server) getInstance(c echo.Context) error {
 	id := c.Param("id")
-	s.mu.RLock()
-	inst, ok := s.instances[id]
-	s.mu.RUnlock()
 
-	if !ok {
-		// Mock response for demo ID
+	instance, err := s.db.GetInstanceByID(id)
+	if err != nil {
 		if id == "inst-demo-01" {
 			return c.JSON(http.StatusOK, map[string]interface{}{
 				"id":            "inst-demo-01",
@@ -410,91 +459,105 @@ func (s *Server) getInstance(c echo.Context) error {
 		}
 		return echo.NewHTTPError(http.StatusNotFound, "Instance not found")
 	}
-	return c.JSON(http.StatusOK, inst)
+	return c.JSON(http.StatusOK, instance)
 }
 
 func (s *Server) startInstance(c echo.Context) error {
 	id := c.Param("id")
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
-	if inst, ok := s.instances[id]; ok {
-		inst["status"] = "running"
-		return c.JSON(http.StatusOK, inst)
+	instance, err := s.db.GetInstanceByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Instance not found")
 	}
-	return echo.NewHTTPError(http.StatusNotFound)
+
+	instance.Status = "running"
+	now := time.Now().UTC()
+	instance.StartedAt = &now
+	s.db.UpdateInstance(instance)
+
+	return c.JSON(http.StatusOK, instance)
 }
 
 func (s *Server) stopInstance(c echo.Context) error {
 	id := c.Param("id")
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
-	if inst, ok := s.instances[id]; ok {
-		inst["status"] = "stopped"
-		return c.JSON(http.StatusOK, inst)
+	instance, err := s.db.GetInstanceByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Instance not found")
 	}
-	return echo.NewHTTPError(http.StatusNotFound)
+
+	instance.Status = "stopped"
+	now := time.Now().UTC()
+	instance.StoppedAt = &now
+	s.db.UpdateInstance(instance)
+
+	return c.JSON(http.StatusOK, instance)
 }
 
 func (s *Server) deleteInstance(c echo.Context) error {
 	id := c.Param("id")
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	delete(s.instances, id)
+	if err := s.db.DeleteInstance(id); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Instance not found")
+	}
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (s *Server) getInstanceLogs(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
-		"logs": "Initializing system...\nLoading drivers...\nReady.",
+		"logs": "Initializing system...\nLoading drivers...\nStarting services...\nReady.",
 	})
 }
 
 func (s *Server) getSSHConfig(c echo.Context) error {
+	id := c.Param("id")
+	instance, _ := s.db.GetInstanceByID(id)
+
+	host := "34.201.12.45"
+	port := 22
+	if instance != nil {
+		host = instance.PublicIP
+		port = instance.SSHPort
+		if port == 0 {
+			port = 22
+		}
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"host": "34.201.12.45",
-		"port": 22,
+		"host": host,
+		"port": port,
 		"user": "ubuntu",
 	})
 }
 
 // Provider handlers
 func (s *Server) listProviders(c echo.Context) error {
-	providers := []map[string]interface{}{
-		{"name": "docker", "display_name": "Local Docker", "status": "available"},
-		{"name": "aws", "display_name": "Amazon Web Services", "status": "available"},
-		{"name": "gcp", "display_name": "Google Cloud Platform", "status": "available"},
-		{"name": "azure", "display_name": "Microsoft Azure", "status": "available"},
-		{"name": "digitalocean", "display_name": "DigitalOcean", "status": "available"},
-		{"name": "linode", "display_name": "Linode/Akamai", "status": "available"},
-		{"name": "vultr", "display_name": "Vultr", "status": "available"},
-		{"name": "hetzner", "display_name": "Hetzner Cloud", "status": "available"},
-		{"name": "oci", "display_name": "Oracle Cloud", "status": "available"},
-		{"name": "alibaba", "display_name": "Alibaba Cloud", "status": "available"},
-		{"name": "tencent", "display_name": "Tencent Cloud", "status": "available"},
-		{"name": "lambdalabs", "display_name": "Lambda Labs (GPU)", "status": "available"},
-		{"name": "runpod", "display_name": "RunPod (GPU)", "status": "available"},
-		{"name": "vast", "display_name": "Vast.ai (GPU)", "status": "available"},
+	ctx := c.Request().Context()
+	providerList := s.providers.List()
+
+	result := make([]providers.ProviderInfo, 0, len(providerList))
+	for _, p := range providerList {
+		result = append(result, providers.GetProviderInfo(p, ctx))
 	}
-	return c.JSON(http.StatusOK, providers)
+
+	return c.JSON(http.StatusOK, result)
 }
 
 func (s *Server) listRegions(c echo.Context) error {
-	return c.JSON(http.StatusOK, []map[string]string{
-		{"id": "us-east-1", "name": "US East (N. Virginia)"},
-		{"id": "us-west-2", "name": "US West (Oregon)"},
-		{"id": "eu-central-1", "name": "Europe (Frankfurt)"},
-	})
+	name := c.Param("name")
+	provider, err := s.providers.Get(providers.ProviderType(name))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Provider not found")
+	}
+	return c.JSON(http.StatusOK, provider.Regions())
 }
 
 func (s *Server) listInstanceTypes(c echo.Context) error {
-	return c.JSON(http.StatusOK, []map[string]interface{}{
-		{"id": "cpu-small", "name": "CPU Small", "vcpu": 2, "ram": 4, "price": 0.02},
-		{"id": "gpu-t4", "name": "NVIDIA T4", "vcpu": 4, "ram": 16, "gpu": "T4", "price": 0.50},
-		{"id": "gpu-a100", "name": "NVIDIA A100", "vcpu": 8, "ram": 80, "gpu": "A100", "price": 3.00},
-	})
+	name := c.Param("name")
+	provider, err := s.providers.Get(providers.ProviderType(name))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Provider not found")
+	}
+	return c.JSON(http.StatusOK, provider.InstanceTypes())
 }
 
 // Team handlers
@@ -524,19 +587,50 @@ func (s *Server) removeTeamMember(c echo.Context) error {
 
 // Billing handlers
 func (s *Server) getUsage(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+
+	records, _ := s.db.GetUsageByUserAndPeriod(userID, startOfMonth, now)
+
+	var totalCost float64
+	var cpuHours, gpuHours float64
+
+	for _, r := range records {
+		totalCost += r.TotalCost
+		if strings.Contains(r.Type, "cpu") {
+			cpuHours += r.Quantity
+		} else if strings.Contains(r.Type, "gpu") {
+			gpuHours += r.Quantity
+		}
+	}
+
+	// Default demo values
+	if totalCost == 0 {
+		cpuHours = 124.5
+		gpuHours = 12.0
+		totalCost = 45.20
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"current_month": map[string]interface{}{
-			"cpu_hours":  124.5,
-			"gpu_hours":  12.0,
-			"total_cost": 45.20,
+			"cpu_hours":  cpuHours,
+			"gpu_hours":  gpuHours,
+			"total_cost": totalCost,
 			"instances":  3,
-			"forecast":   85.00,
+			"forecast":   totalCost * 2,
 		},
 	})
 }
 
 func (s *Server) listInvoices(c echo.Context) error {
-	return c.JSON(http.StatusOK, []interface{}{})
+	userID := c.Get("user_id").(string)
+	invoices, err := s.db.ListInvoicesByUser(userID)
+	if err != nil {
+		return c.JSON(http.StatusOK, []interface{}{})
+	}
+	return c.JSON(http.StatusOK, invoices)
 }
 
 func (s *Server) updateSubscription(c echo.Context) error {

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { Check, Cpu, Globe, Rocket } from 'lucide-react'
-import { api, Provider } from '@/lib/api'
+import { api, type Provider } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const instanceTypes = [

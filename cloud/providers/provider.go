@@ -118,8 +118,16 @@ type Provider interface {
 	// Metadata
 	Name() ProviderType
 	DisplayName() string
+	Description() string
+	Website() string
+	Features() []string
+	RequiredCredentials() []string
 	Regions() []Region
 	InstanceTypes() []InstancePricing
+
+	// Configuration
+	Configure(credentials map[string]string) error
+	IsAvailable(ctx context.Context) bool
 
 	// Instance lifecycle
 	CreateInstance(ctx context.Context, config InstanceConfig) (*Instance, error)

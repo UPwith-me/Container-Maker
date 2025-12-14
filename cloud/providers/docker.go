@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,14 +14,22 @@ import (
 
 // DockerProvider implements Provider interface using local Docker
 type DockerProvider struct {
+	mu         sync.RWMutex
 	dockerPath string
+	available  bool
 }
 
 // NewDockerProvider creates a new Docker provider for local development
 func NewDockerProvider() *DockerProvider {
-	return &DockerProvider{
+	p := &DockerProvider{
 		dockerPath: "docker",
 	}
+	// Check if docker is available
+	cmd := exec.Command("docker", "version")
+	if err := cmd.Run(); err == nil {
+		p.available = true
+	}
+	return p
 }
 
 func (p *DockerProvider) Name() ProviderType {
@@ -29,6 +38,33 @@ func (p *DockerProvider) Name() ProviderType {
 
 func (p *DockerProvider) DisplayName() string {
 	return "Local Docker"
+}
+
+func (p *DockerProvider) Description() string {
+	return "Run development environments locally using Docker containers."
+}
+
+func (p *DockerProvider) Website() string {
+	return "https://www.docker.com"
+}
+
+func (p *DockerProvider) Features() []string {
+	return []string{"local-development", "free", "fast-startup", "devcontainers"}
+}
+
+func (p *DockerProvider) RequiredCredentials() []string {
+	return []string{} // No credentials needed for local Docker
+}
+
+func (p *DockerProvider) Configure(credentials map[string]string) error {
+	// Docker doesn't need credentials
+	return nil
+}
+
+func (p *DockerProvider) IsAvailable(ctx context.Context) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.available
 }
 
 func (p *DockerProvider) Regions() []Region {

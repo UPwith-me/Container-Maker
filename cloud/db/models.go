@@ -3,172 +3,250 @@ package db
 
 import (
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // User represents a registered user
 type User struct {
-	ID           string `json:"id" db:"id"`
-	Email        string `json:"email" db:"email"`
-	Name         string `json:"name" db:"name"`
-	AvatarURL    string `json:"avatar_url,omitempty" db:"avatar_url"`
-	PasswordHash string `json:"-" db:"password_hash"` // For email/password auth
+	ID           string `gorm:"primaryKey;size:36" json:"id"`
+	Email        string `gorm:"uniqueIndex;size:255" json:"email"`
+	Name         string `gorm:"size:255" json:"name"`
+	PasswordHash string `gorm:"size:255" json:"-"`
+	AvatarURL    string `gorm:"size:500" json:"avatar_url,omitempty"`
 
-	// OAuth identities
-	GitHubID string `json:"-" db:"github_id"`
-	GoogleID string `json:"-" db:"google_id"`
+	// OAuth
+	GitHubID string `gorm:"size:50;index" json:"-"`
+	GoogleID string `gorm:"size:50;index" json:"-"`
 
 	// Stripe
-	StripeCustomerID string `json:"-" db:"stripe_customer_id"`
+	StripeCustomerID string `gorm:"size:50" json:"-"`
 
 	// Status
-	IsActive      bool `json:"is_active" db:"is_active"`
-	IsAdmin       bool `json:"is_admin" db:"is_admin"`
-	EmailVerified bool `json:"email_verified" db:"email_verified"`
+	EmailVerified bool `gorm:"default:false" json:"email_verified"`
+	IsActive      bool `gorm:"default:true" json:"is_active"`
 
 	// Timestamps
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
-	LastLoginAt time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Relations
+	Instances   []Instance        `gorm:"foreignKey:OwnerID" json:"-"`
+	APIKeys     []APIKey          `gorm:"foreignKey:UserID" json:"-"`
+	Credentials []CloudCredential `gorm:"foreignKey:UserID" json:"-"`
+}
+
+// SetPassword hashes and sets the user's password
+func (u *User) SetPassword(password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	u.PasswordHash = string(hash)
+	return nil
+}
+
+// CheckPassword verifies if the provided password matches
+func (u *User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
+	return err == nil
 }
 
 // Team represents an organization/team
 type Team struct {
-	ID      string `json:"id" db:"id"`
-	Name    string `json:"name" db:"name"`
-	Slug    string `json:"slug" db:"slug"` // URL-friendly name
-	OwnerID string `json:"owner_id" db:"owner_id"`
+	ID      string `gorm:"primaryKey;size:36" json:"id"`
+	Name    string `gorm:"size:255" json:"name"`
+	Slug    string `gorm:"uniqueIndex;size:100" json:"slug"`
+	OwnerID string `gorm:"size:36;index" json:"owner_id"`
 
-	// Billing
-	StripeCustomerID     string `json:"-" db:"stripe_customer_id"`
-	StripeSubscriptionID string `json:"-" db:"stripe_subscription_id"`
-	Plan                 string `json:"plan" db:"plan"` // free, pro, enterprise
-
-	// Quotas
-	MaxInstances  int     `json:"max_instances" db:"max_instances"`
-	MaxGPUHours   int     `json:"max_gpu_hours" db:"max_gpu_hours"`
-	MonthlyBudget float64 `json:"monthly_budget" db:"monthly_budget"`
+	// Stripe
+	StripeCustomerID string `gorm:"size:50" json:"-"`
 
 	// Timestamps
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Relations
+	Members   []TeamMember `gorm:"foreignKey:TeamID" json:"-"`
+	Instances []Instance   `gorm:"foreignKey:TeamID" json:"-"`
 }
 
 // TeamMember represents a user's membership in a team
 type TeamMember struct {
-	ID        string    `json:"id" db:"id"`
-	TeamID    string    `json:"team_id" db:"team_id"`
-	UserID    string    `json:"user_id" db:"user_id"`
-	Role      string    `json:"role" db:"role"` // owner, admin, member
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	ID       string    `gorm:"primaryKey;size:36" json:"id"`
+	TeamID   string    `gorm:"size:36;index" json:"team_id"`
+	UserID   string    `gorm:"size:36;index" json:"user_id"`
+	Role     string    `gorm:"size:50;default:'member'" json:"role"` // owner, admin, member
+	JoinedAt time.Time `json:"joined_at"`
+
+	// Relations
+	Team Team `gorm:"foreignKey:TeamID" json:"-"`
+	User User `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // APIKey represents an API key for programmatic access
 type APIKey struct {
-	ID        string `json:"id" db:"id"`
-	UserID    string `json:"user_id" db:"user_id"`
-	TeamID    string `json:"team_id,omitempty" db:"team_id"`
-	Name      string `json:"name" db:"name"`
-	KeyPrefix string `json:"key_prefix" db:"key_prefix"` // First 8 chars for display
-	KeyHash   string `json:"-" db:"key_hash"`            // Hashed key
+	ID        string `gorm:"primaryKey;size:36" json:"id"`
+	UserID    string `gorm:"size:36;index" json:"user_id"`
+	Name      string `gorm:"size:100" json:"name"`
+	KeyPrefix string `gorm:"size:10" json:"key_prefix"` // First 8 chars for display
+	KeyHash   string `gorm:"size:255;uniqueIndex" json:"-"`
 
 	// Permissions
-	Scopes []string `json:"scopes" db:"scopes"` // read, write, admin
-
-	// Status
-	IsActive   bool      `json:"is_active" db:"is_active"`
-	LastUsedAt time.Time `json:"last_used_at,omitempty" db:"last_used_at"`
-	ExpiresAt  time.Time `json:"expires_at,omitempty" db:"expires_at"`
+	Scopes string `gorm:"size:500" json:"scopes"` // Comma-separated: read,write,admin
 
 	// Timestamps
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-}
+	LastUsedAt *time.Time     `json:"last_used_at,omitempty"`
+	ExpiresAt  *time.Time     `json:"expires_at,omitempty"`
+	CreatedAt  time.Time      `json:"created_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
 
-// Instance represents a cloud development environment instance
-type Instance struct {
-	ID      string `json:"id" db:"id"`
-	Name    string `json:"name" db:"name"`
-	OwnerID string `json:"owner_id" db:"owner_id"`
-	TeamID  string `json:"team_id,omitempty" db:"team_id"`
-
-	// Provider
-	Provider     string `json:"provider" db:"provider"`
-	Region       string `json:"region" db:"region"`
-	InstanceType string `json:"instance_type" db:"instance_type"`
-
-	// Status
-	Status    string `json:"status" db:"status"`
-	PublicIP  string `json:"public_ip,omitempty" db:"public_ip"`
-	PrivateIP string `json:"private_ip,omitempty" db:"private_ip"`
-	SSHPort   int    `json:"ssh_port" db:"ssh_port"`
-
-	// Configuration
-	Image        string `json:"image" db:"image"`
-	DevContainer string `json:"devcontainer,omitempty" db:"devcontainer"` // JSON
-
-	// Cost tracking
-	HourlyRate float64 `json:"hourly_rate" db:"hourly_rate"`
-	TotalCost  float64 `json:"total_cost" db:"total_cost"`
-
-	// Provider-specific
-	ProviderID string `json:"-" db:"provider_id"` // ID in the cloud provider
-
-	// Timestamps
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-	StartedAt time.Time `json:"started_at,omitempty" db:"started_at"`
-	StoppedAt time.Time `json:"stopped_at,omitempty" db:"stopped_at"`
+	// Relations
+	User User `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // CloudCredential stores encrypted cloud provider credentials
 type CloudCredential struct {
-	ID       string `json:"id" db:"id"`
-	UserID   string `json:"user_id" db:"user_id"`
-	TeamID   string `json:"team_id,omitempty" db:"team_id"`
-	Provider string `json:"provider" db:"provider"`
-	Name     string `json:"name" db:"name"`
+	ID       string `gorm:"primaryKey;size:36" json:"id"`
+	UserID   string `gorm:"size:36;index" json:"user_id"`
+	Provider string `gorm:"size:50" json:"provider"` // aws, gcp, azure, etc.
+	Name     string `gorm:"size:100" json:"name"`
 
-	// Encrypted credentials (use AES-256-GCM)
-	EncryptedData string `json:"-" db:"encrypted_data"`
+	// Encrypted credentials (JSON blob encrypted with user's key)
+	EncryptedData string `gorm:"type:text" json:"-"`
 
 	// Status
-	IsValid     bool      `json:"is_valid" db:"is_valid"`
-	LastChecked time.Time `json:"last_checked,omitempty" db:"last_checked"`
+	IsVerified   bool       `gorm:"default:false" json:"is_verified"`
+	LastVerified *time.Time `json:"last_verified,omitempty"`
 
 	// Timestamps
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Relations
+	User User `gorm:"foreignKey:UserID" json:"-"`
+}
+
+// Instance represents a cloud compute instance
+type Instance struct {
+	ID      string  `gorm:"primaryKey;size:36" json:"id"`
+	OwnerID string  `gorm:"size:36;index" json:"owner_id"`
+	TeamID  *string `gorm:"size:36;index" json:"team_id,omitempty"`
+
+	// Instance Info
+	Name         string `gorm:"size:100" json:"name"`
+	Provider     string `gorm:"size:50" json:"provider"`
+	Region       string `gorm:"size:50" json:"region"`
+	Zone         string `gorm:"size:50" json:"zone,omitempty"`
+	InstanceType string `gorm:"size:50" json:"instance_type"`
+
+	// Status
+	Status       string `gorm:"size:50;default:'pending'" json:"status"` // pending, provisioning, running, stopped, terminated, error
+	StatusReason string `gorm:"size:255" json:"status_reason,omitempty"`
+
+	// Networking
+	PublicIP  string `gorm:"size:50" json:"public_ip,omitempty"`
+	PrivateIP string `gorm:"size:50" json:"private_ip,omitempty"`
+	SSHPort   int    `gorm:"default:22" json:"ssh_port"`
+
+	// Provider-specific
+	ProviderID   string `gorm:"size:100" json:"provider_id,omitempty"` // EC2 instance ID, etc.
+	ProviderData string `gorm:"type:text" json:"-"`                    // JSON blob for provider-specific data
+
+	// Pricing
+	HourlyRate float64 `gorm:"type:decimal(10,4)" json:"hourly_rate"`
+
+	// Timestamps
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	StartedAt *time.Time     `json:"started_at,omitempty"`
+	StoppedAt *time.Time     `json:"stopped_at,omitempty"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Relations
+	Owner User  `gorm:"foreignKey:OwnerID" json:"-"`
+	Team  *Team `gorm:"foreignKey:TeamID" json:"-"`
 }
 
 // UsageRecord tracks resource usage for billing
 type UsageRecord struct {
-	ID         string `json:"id" db:"id"`
-	UserID     string `json:"user_id" db:"user_id"`
-	TeamID     string `json:"team_id,omitempty" db:"team_id"`
-	InstanceID string `json:"instance_id" db:"instance_id"`
+	ID         string `gorm:"primaryKey;size:36" json:"id"`
+	UserID     string `gorm:"size:36;index" json:"user_id"`
+	InstanceID string `gorm:"size:36;index" json:"instance_id"`
 
 	// Usage
-	InstanceType string    `json:"instance_type" db:"instance_type"`
-	Provider     string    `json:"provider" db:"provider"`
-	StartTime    time.Time `json:"start_time" db:"start_time"`
-	EndTime      time.Time `json:"end_time,omitempty" db:"end_time"`
-	DurationSecs int64     `json:"duration_secs" db:"duration_secs"`
+	Type      string  `gorm:"size:50" json:"type"` // compute, storage, network
+	Quantity  float64 `gorm:"type:decimal(20,6)" json:"quantity"`
+	Unit      string  `gorm:"size:20" json:"unit"` // hours, gb, requests
+	UnitPrice float64 `gorm:"type:decimal(10,6)" json:"unit_price"`
+	TotalCost float64 `gorm:"type:decimal(10,4)" json:"total_cost"`
 
-	// Cost
-	HourlyRate float64 `json:"hourly_rate" db:"hourly_rate"`
-	TotalCost  float64 `json:"total_cost" db:"total_cost"`
+	// Period
+	Timestamp   time.Time `gorm:"index" json:"timestamp"`
+	PeriodStart time.Time `json:"period_start"`
+	PeriodEnd   time.Time `json:"period_end"`
 
-	// Billing
-	Invoiced  bool   `json:"invoiced" db:"invoiced"`
-	InvoiceID string `json:"invoice_id,omitempty" db:"invoice_id"`
+	// Relations
+	User     User     `gorm:"foreignKey:UserID" json:"-"`
+	Instance Instance `gorm:"foreignKey:InstanceID" json:"-"`
 }
 
-// Session represents an active user session (for JWT refresh)
+// Invoice represents a billing invoice
+type Invoice struct {
+	ID     string `gorm:"primaryKey;size:36" json:"id"`
+	UserID string `gorm:"size:36;index" json:"user_id"`
+
+	// Invoice Details
+	Number string `gorm:"size:50;uniqueIndex" json:"number"`
+	Status string `gorm:"size:20" json:"status"` // draft, pending, paid, failed, void
+
+	// Amounts (in cents)
+	Subtotal   int64 `json:"subtotal"`
+	Tax        int64 `json:"tax"`
+	Total      int64 `json:"total"`
+	AmountPaid int64 `json:"amount_paid"`
+	AmountDue  int64 `json:"amount_due"`
+
+	// Currency
+	Currency string `gorm:"size:3;default:'USD'" json:"currency"`
+
+	// Stripe
+	StripeInvoiceID       string `gorm:"size:50" json:"-"`
+	StripePaymentIntentID string `gorm:"size:50" json:"-"`
+
+	// Period
+	PeriodStart time.Time  `json:"period_start"`
+	PeriodEnd   time.Time  `json:"period_end"`
+	DueDate     *time.Time `json:"due_date,omitempty"`
+	PaidAt      *time.Time `json:"paid_at,omitempty"`
+
+	// Timestamps
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Relations
+	User User `gorm:"foreignKey:UserID" json:"-"`
+}
+
+// Session represents a user session for JWT refresh tokens
 type Session struct {
-	ID           string    `json:"id" db:"id"`
-	UserID       string    `json:"user_id" db:"user_id"`
-	RefreshToken string    `json:"-" db:"refresh_token"`
-	UserAgent    string    `json:"user_agent" db:"user_agent"`
-	IPAddress    string    `json:"ip_address" db:"ip_address"`
-	ExpiresAt    time.Time `json:"expires_at" db:"expires_at"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	ID     string `gorm:"primaryKey;size:36" json:"id"`
+	UserID string `gorm:"size:36;index" json:"user_id"`
+	Token  string `gorm:"size:255;uniqueIndex" json:"-"`
+
+	// Metadata
+	UserAgent string `gorm:"size:500" json:"user_agent,omitempty"`
+	IPAddress string `gorm:"size:50" json:"ip_address,omitempty"`
+
+	// Timestamps
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	LastActiveAt time.Time `json:"last_active_at"`
+
+	// Relations
+	User User `gorm:"foreignKey:UserID" json:"-"`
 }

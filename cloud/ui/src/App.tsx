@@ -1,20 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './Layout'
 import Dashboard from './pages/Dashboard'
 import CreateInstance from './pages/CreateInstance'
-
-// Placeholder pages
-const Instances = () => <Navigate to="/" replace />
-const Billing = () => <div className="text-muted-foreground">Billing Module Loading...</div>
-const Settings = () => <div className="text-muted-foreground">Settings Module Loading...</div>
+import Login from './pages/Login'
+import Billing from './pages/Billing'
+import Settings from './pages/Settings'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected routes with layout */}
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/instances" element={<Instances />} />
+          <Route path="/instances" element={<Dashboard />} />
           <Route path="/instances/new" element={<CreateInstance />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/settings" element={<Settings />} />

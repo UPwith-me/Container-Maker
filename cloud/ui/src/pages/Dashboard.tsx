@@ -4,13 +4,11 @@ import {
     Server,
     Cpu,
     Activity,
-    MoreVertical,
     Power,
     Trash2,
-    Terminal,
-    Circle
+    Terminal
 } from 'lucide-react'
-import { api, Instance } from '@/lib/api'
+import { api, type Instance } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 export default function Dashboard() {
