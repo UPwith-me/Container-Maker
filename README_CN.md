@@ -699,7 +699,9 @@ go test ./...
 
 ## 📄 许可证
 
-MIT 许可证 - 详见 [LICENSE](LICENSE)。
+Container-Maker 采用双重许可模式：[AGPL-3.0](LICENSE)（开源使用）和 [商业许可](COMMERCIAL-LICENSE.md)（专有/商业使用）。
+
+详见 [LICENSE](LICENSE) 和 [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)。
 
 ---
 

@@ -699,7 +699,9 @@ go test ./...
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Container-Maker is dual-licensed under the [AGPL-3.0](LICENSE) (for open source use) and a [Commercial License](COMMERCIAL-LICENSE.md) (for proprietary/commercial use).
+
+See [LICENSE](LICENSE) and [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) for details.
 
 ---
 
