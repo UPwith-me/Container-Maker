@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/container-make/cm/pkg/userconfig"
+	"github.com/UPwith-me/Container-Maker/pkg/userconfig"
 	"github.com/spf13/cobra"
 )
 

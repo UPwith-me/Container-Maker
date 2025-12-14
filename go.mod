@@ -1,4 +1,4 @@
-module github.com/container-make/cm
+module github.com/UPwith-me/Container-Maker
 
 go 1.24.0
 

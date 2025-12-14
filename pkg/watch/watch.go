@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/container-make/cm/pkg/config"
-	"github.com/container-make/cm/pkg/runner"
+	"github.com/UPwith-me/Container-Maker/pkg/config"
+	"github.com/UPwith-me/Container-Maker/pkg/runner"
 	"github.com/fsnotify/fsnotify"
 )
 

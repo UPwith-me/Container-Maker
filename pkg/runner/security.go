@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/container-make/cm/pkg/config"
+	"github.com/UPwith-me/Container-Maker/pkg/config"
 )
 
 // SecurityWarning represents a security concern

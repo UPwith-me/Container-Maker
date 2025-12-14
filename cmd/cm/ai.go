@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/container-make/cm/pkg/ai"
+	"github.com/UPwith-me/Container-Maker/pkg/ai"
 	"github.com/spf13/cobra"
 )
 

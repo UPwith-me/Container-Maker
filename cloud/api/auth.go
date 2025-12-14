@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
-	"github.com/container-make/cm/cloud/db"
+	"github.com/UPwith-me/Container-Maker/cloud/db"
 )
 
 // AuthRequest represents login/register request body

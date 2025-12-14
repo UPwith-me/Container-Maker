@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/container-make/cm/pkg/config"
-	"github.com/container-make/cm/pkg/features"
+	"github.com/UPwith-me/Container-Maker/pkg/config"
+	"github.com/UPwith-me/Container-Maker/pkg/features"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/container-make/cm/pkg/sync"
-	"github.com/container-make/cm/pkg/userconfig"
+	"github.com/UPwith-me/Container-Maker/pkg/sync"
+	"github.com/UPwith-me/Container-Maker/pkg/userconfig"
 	"github.com/spf13/cobra"
 )
 

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/container-make/cm/cloud/providers"
+	"github.com/UPwith-me/Container-Maker/cloud/providers"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )

@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/container-make/cm/pkg/userconfig"
+	"github.com/UPwith-me/Container-Maker/pkg/userconfig"
 )
 
 // Generator generates devcontainer.json using AI

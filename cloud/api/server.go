@@ -16,9 +16,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	"github.com/container-make/cm/cloud/db"
-	"github.com/container-make/cm/cloud/providers"
-	"github.com/container-make/cm/cloud/ui"
+	"github.com/UPwith-me/Container-Maker/cloud/db"
+	"github.com/UPwith-me/Container-Maker/cloud/providers"
+	"github.com/UPwith-me/Container-Maker/cloud/ui"
 	// Import UI package
 )
 

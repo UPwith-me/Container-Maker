@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/container-make/cm/pkg/config"
-	"github.com/container-make/cm/pkg/runner"
-	"github.com/container-make/cm/pkg/template"
+	"github.com/UPwith-me/Container-Maker/pkg/config"
+	"github.com/UPwith-me/Container-Maker/pkg/runner"
+	"github.com/UPwith-me/Container-Maker/pkg/template"
 	"github.com/spf13/cobra"
 )
 

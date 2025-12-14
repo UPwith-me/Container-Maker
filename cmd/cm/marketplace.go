@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/container-make/cm/pkg/template"
+	"github.com/UPwith-me/Container-Maker/pkg/template"
 	"github.com/spf13/cobra"
 )
 

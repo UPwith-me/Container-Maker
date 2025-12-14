@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/container-make/cm/pkg/config"
-	"github.com/container-make/cm/pkg/runtime"
+	"github.com/UPwith-me/Container-Maker/pkg/config"
+	"github.com/UPwith-me/Container-Maker/pkg/runtime"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"

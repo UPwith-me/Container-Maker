@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/container-make/cm/pkg/config"
+	"github.com/UPwith-me/Container-Maker/pkg/config"
 )
 
 // ComposeRunner handles Docker Compose-based dev containers

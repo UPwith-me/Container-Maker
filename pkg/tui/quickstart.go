@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/container-make/cm/pkg/template"
+	"github.com/UPwith-me/Container-Maker/pkg/template"
 )
 
 // QuickStartAction is a simpler menu item for the quickstart wizard
