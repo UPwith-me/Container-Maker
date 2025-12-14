@@ -18,6 +18,8 @@ import (
 
 	"github.com/container-make/cm/cloud/db"
 	"github.com/container-make/cm/cloud/providers"
+	"github.com/container-make/cm/cloud/ui"
+	// Import UI package
 )
 
 // Config holds API server configuration
@@ -131,6 +133,45 @@ func (s *Server) loadSavedConfig() {
 func (s *Server) setupRoutes() {
 	// Health check
 	s.echo.GET("/health", s.healthCheck)
+
+	// Serve Frontend (Embedded)
+	distFS, err := ui.DistDir()
+	if err == nil {
+		fileServer := http.FileServer(http.FS(distFS))
+		s.echo.GET("/*", func(c echo.Context) error {
+			path := c.Request().URL.Path
+			// Skip API routes
+			if strings.HasPrefix(path, "/api") {
+				return echo.ErrNotFound
+			}
+
+			// Serve static file
+			f, err := distFS.Open(strings.TrimPrefix(path, "/"))
+			if err == nil {
+				defer f.Close()
+				stat, _ := f.Stat()
+				if !stat.IsDir() {
+					fileServer.ServeHTTP(c.Response(), c.Request())
+					return nil
+				}
+			}
+
+			// SPA Fallback: Serve index.html for unknown routes
+			indexFile, err := distFS.Open("index.html")
+			if err != nil {
+				return c.String(http.StatusNotFound, "Frontend not found")
+			}
+			defer indexFile.Close()
+
+			stat, _ := indexFile.Stat()
+			content := make([]byte, stat.Size())
+			indexFile.Read(content)
+
+			return c.HTMLBlob(http.StatusOK, content)
+		})
+	} else {
+		fmt.Printf("Warning: Frontend not embedded: %v\n", err)
+	}
 
 	// API v1
 	v1 := s.echo.Group("/api/v1")

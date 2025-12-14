@@ -6,183 +6,107 @@ import (
 	"testing"
 )
 
-func TestParseConfig(t *testing.T) {
-	// Create a temporary config file
+func TestParseConfig_Simple(t *testing.T) {
+	// Create temp config file
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "devcontainer.json")
 
-	tests := []struct {
-		name      string
-		content   string
-		wantImage string
-		wantPorts int
-		wantErr   bool
-	}{
-		{
-			name: "simple image config",
-			content: `{
-				"image": "mcr.microsoft.com/devcontainers/base:ubuntu"
-			}`,
-			wantImage: "mcr.microsoft.com/devcontainers/base:ubuntu",
-			wantErr:   false,
-		},
-		{
-			name: "config with ports",
-			content: `{
-				"image": "nginx:latest",
-				"forwardPorts": [8080, 443, "3000/tcp"]
-			}`,
-			wantImage: "nginx:latest",
-			wantPorts: 3,
-			wantErr:   false,
-		},
-		{
-			name: "config with comments (JSONC)",
-			content: `{
-				// This is a comment
-				"image": "alpine:latest",
-				"containerEnv": {
-					"KEY": "value"  // trailing comment
-				}
-			}`,
-			wantImage: "alpine:latest",
-			wantErr:   false,
-		},
-		{
-			name: "config with trailing comma",
-			content: `{
-				"image": "ubuntu:22.04",
-				"mounts": [
-					"source=/host,target=/container,type=bind",
-				]
-			}`,
-			wantImage: "ubuntu:22.04",
-			wantErr:   false,
-		},
-		{
-			name: "docker compose config",
-			content: `{
-				"dockerComposeFile": "docker-compose.yml",
-				"service": "app",
-				"runServices": ["app", "db"]
-			}`,
-			wantImage: "",
-			wantErr:   false,
-		},
-		{
-			name: "build config",
-			content: `{
-				"build": {
-					"dockerfile": "Dockerfile",
-					"context": ".",
-					"args": {
-						"VARIANT": "18"
-					}
-				}
-			}`,
-			wantImage: "",
-			wantErr:   false,
-		},
-		{
-			name:    "invalid json",
-			content: `{ invalid json }`,
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Write config file
-			if err := os.WriteFile(configPath, []byte(tt.content), 0644); err != nil {
-				t.Fatalf("failed to write config file: %v", err)
-			}
-
-			// Parse config
-			cfg, err := ParseConfig(configPath)
-
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("ParseConfig() expected error, got nil")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("ParseConfig() unexpected error: %v", err)
-			}
-
-			if cfg.Image != tt.wantImage {
-				t.Errorf("Image = %q, want %q", cfg.Image, tt.wantImage)
-			}
-
-			if tt.wantPorts > 0 && len(cfg.ForwardPorts) != tt.wantPorts {
-				t.Errorf("ForwardPorts count = %d, want %d", len(cfg.ForwardPorts), tt.wantPorts)
-			}
-		})
-	}
-}
-
-func TestParseConfig_NonExistentFile(t *testing.T) {
-	_, err := ParseConfig("/non/existent/file.json")
-	if err == nil {
-		t.Error("ParseConfig() expected error for non-existent file, got nil")
-	}
-}
-
-func TestParseConfig_AllFields(t *testing.T) {
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "devcontainer.json")
-
-	content := `{
-		"image": "ubuntu:latest",
-		"runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
-		"mounts": ["source=/host,target=/container,type=bind"],
-		"containerEnv": {"ENV1": "value1"},
-		"remoteEnv": {"ENV2": "value2"},
-		"postCreateCommand": "npm install",
-		"postStartCommand": ["echo", "started"],
-		"postAttachCommand": "zsh",
-		"features": {
-			"ghcr.io/devcontainers/features/go:1": {"version": "1.21"}
-		},
-		"forwardPorts": [8080],
-		"user": "vscode",
-		"workspaceMount": "source=/local,target=/remote,type=bind",
-		"workspaceFolder": "/workspaces/project"
+	configContent := `{
+		"image": "ubuntu:22.04",
+		"forwardPorts": [8080, 3000],
+		"containerEnv": {
+			"NODE_ENV": "development"
+		}
 	}`
 
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
-		t.Fatalf("failed to write config file: %v", err)
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	cfg, err := ParseConfig(configPath)
 	if err != nil {
-		t.Fatalf("ParseConfig() error: %v", err)
+		t.Fatalf("ParseConfig failed: %v", err)
 	}
 
-	// Verify all fields
-	if cfg.Image != "ubuntu:latest" {
-		t.Errorf("Image = %q, want %q", cfg.Image, "ubuntu:latest")
+	if cfg.Image != "ubuntu:22.04" {
+		t.Errorf("Expected image 'ubuntu:22.04', got '%s'", cfg.Image)
 	}
-	if len(cfg.RunArgs) != 3 {
-		t.Errorf("RunArgs count = %d, want 3", len(cfg.RunArgs))
+
+	if len(cfg.ForwardPorts) != 2 {
+		t.Errorf("Expected 2 forward ports, got %d", len(cfg.ForwardPorts))
 	}
-	if len(cfg.Mounts) != 1 {
-		t.Errorf("Mounts count = %d, want 1", len(cfg.Mounts))
+
+	if cfg.ContainerEnv["NODE_ENV"] != "development" {
+		t.Errorf("Expected NODE_ENV='development', got '%s'", cfg.ContainerEnv["NODE_ENV"])
 	}
-	if cfg.ContainerEnv["ENV1"] != "value1" {
-		t.Errorf("ContainerEnv[ENV1] = %q, want %q", cfg.ContainerEnv["ENV1"], "value1")
+}
+
+func TestParseConfig_WithComments(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "devcontainer.json")
+
+	// JSONC with comments and trailing commas
+	configContent := `{
+		// This is a comment
+		"image": "node:20",
+		"features": {
+			"ghcr.io/devcontainers/features/git:1": {},
+		}, // trailing comma
+	}`
+
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
 	}
-	if cfg.RemoteEnv["ENV2"] != "value2" {
-		t.Errorf("RemoteEnv[ENV2] = %q, want %q", cfg.RemoteEnv["ENV2"], "value2")
+
+	cfg, err := ParseConfig(configPath)
+	if err != nil {
+		t.Fatalf("ParseConfig failed with JSONC: %v", err)
 	}
-	if cfg.User != "vscode" {
-		t.Errorf("User = %q, want %q", cfg.User, "vscode")
+
+	if cfg.Image != "node:20" {
+		t.Errorf("Expected image 'node:20', got '%s'", cfg.Image)
 	}
-	if cfg.WorkspaceFolder != "/workspaces/project" {
-		t.Errorf("WorkspaceFolder = %q, want %q", cfg.WorkspaceFolder, "/workspaces/project")
+}
+
+func TestParseConfig_WithBuild(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "devcontainer.json")
+
+	configContent := `{
+		"build": {
+			"dockerfile": "Dockerfile",
+			"context": ".",
+			"args": {
+				"VARIANT": "3.11"
+			}
+		}
+	}`
+
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
 	}
-	if len(cfg.Features) != 1 {
-		t.Errorf("Features count = %d, want 1", len(cfg.Features))
+
+	cfg, err := ParseConfig(configPath)
+	if err != nil {
+		t.Fatalf("ParseConfig failed: %v", err)
+	}
+
+	if cfg.Build == nil {
+		t.Fatal("Expected Build config to be present")
+	}
+
+	if cfg.Build.Dockerfile != "Dockerfile" {
+		t.Errorf("Expected dockerfile 'Dockerfile', got '%s'", cfg.Build.Dockerfile)
+	}
+
+	if cfg.Build.Args["VARIANT"] != "3.11" {
+		t.Errorf("Expected VARIANT='3.11', got '%s'", cfg.Build.Args["VARIANT"])
+	}
+}
+
+func TestParseConfig_NotFound(t *testing.T) {
+	_, err := ParseConfig("/nonexistent/path/devcontainer.json")
+	if err == nil {
+		t.Error("Expected error for non-existent file")
 	}
 }

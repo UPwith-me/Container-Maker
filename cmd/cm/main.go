@@ -34,10 +34,38 @@ var configFile string
 
 var rootCmd = &cobra.Command{
 	Use:   "cm",
-	Short: "Container-Maker: A tool to execute build commands inside containers",
+	Short: "Container-Maker: The Ultimate Developer Experience for Containers",
 	Long: `Container-Maker (cm) is a CLI tool that bridges the gap between local Makefiles
 and containerized build environments. It reads devcontainer.json configurations
-and executes commands in ephemeral or persistent containers.`,
+and executes commands in ephemeral or persistent containers.
+
+QUICK START
+  cm init              Initialize a new project with templates
+  cm shell             Open interactive shell in the container
+  cm run make build    Run any command inside the container
+
+ENVIRONMENT MANAGEMENT
+  cm setup             Auto-install Docker/Podman
+  cm doctor            Diagnose your development environment
+  cm status            View running containers (TUI dashboard)
+
+ADVANCED FEATURES
+  cm ai generate       AI-powered config generation
+  cm marketplace       Browse and install templates
+  cm cloud             Manage cloud development environments
+
+EXAMPLES
+  # Start a new Python project
+  $ cm init --template python
+
+  # Run tests inside the container
+  $ cm run pytest tests/
+
+  # Open VS Code in the container
+  $ cm code
+
+  # Deploy to cloud
+  $ cm cloud deploy --provider aws`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Only show welcome on init command
 		if cmd.Name() == "init" {

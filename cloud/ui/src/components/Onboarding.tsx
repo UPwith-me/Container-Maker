@@ -6,9 +6,9 @@ import {
     Cloud,
     Server,
     Key,
-    CheckCircle,
     ArrowRight,
-    Sparkles
+    Sparkles,
+    X
 } from 'lucide-react'
 
 interface OnboardingStep {
@@ -16,15 +16,23 @@ interface OnboardingStep {
     title: string
     description: string
     icon: React.ReactNode
-    action?: () => void
-    actionLabel?: string
+    actionLabel: string
+    navigateTo?: string  // Instead of action, just store the path
     skippable?: boolean
 }
 
-export default function Onboarding({ onComplete }: { onComplete: () => void }) {
+interface OnboardingProps {
+    onComplete: () => void
+    onMinimize?: () => void  // Allow minimizing instead of closing
+}
+
+export default function Onboarding({ onComplete, onMinimize }: OnboardingProps) {
     const navigate = useNavigate()
-    const [currentStep, setCurrentStep] = useState(0)
-    const [completedSteps, setCompletedSteps] = useState<string[]>([])
+    const [currentStep, setCurrentStep] = useState(() => {
+        // Resume from saved step
+        const saved = localStorage.getItem('onboarding_step')
+        return saved ? parseInt(saved, 10) : 0
+    })
 
     const steps: OnboardingStep[] = [
         {
@@ -39,7 +47,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             title: 'Choose Your Cloud Provider',
             description: 'Docker local is ready to use! Configure additional cloud providers in Settings to unlock AWS, GCP, Azure, and more.',
             icon: <Cloud className="h-12 w-12 text-blue-500" />,
-            action: () => navigate('/settings'),
+            navigateTo: '/settings',
             actionLabel: 'Configure Providers',
             skippable: true,
         },
@@ -48,7 +56,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             title: 'Create Your First Instance',
             description: 'Launch a development environment in seconds. Start with Docker for local development, or use any configured cloud provider.',
             icon: <Server className="h-12 w-12 text-purple-500" />,
-            action: () => navigate('/instances/new'),
+            navigateTo: '/instances/new',
             actionLabel: 'Create Instance',
             skippable: true,
         },
@@ -57,7 +65,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
             title: 'Generate an API Key',
             description: 'Use API keys for programmatic access via CLI or CI/CD pipelines. Keep them secure!',
             icon: <Key className="h-12 w-12 text-amber-500" />,
-            action: () => navigate('/settings'),
+            navigateTo: '/settings',
             actionLabel: 'Create API Key',
             skippable: true,
         },
@@ -70,15 +78,33 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         },
     ]
 
-    const handleNext = () => {
-        const step = steps[currentStep]
-        setCompletedSteps(prev => [...prev, step.id])
+    // Save current step to localStorage
+    useEffect(() => {
+        localStorage.setItem('onboarding_step', currentStep.toString())
+    }, [currentStep])
 
+    const handleNext = () => {
         if (currentStep === steps.length - 1) {
+            // Only mark completed on final step
             localStorage.setItem('onboarding_completed', 'true')
+            localStorage.removeItem('onboarding_step')
             onComplete()
         } else {
             setCurrentStep(prev => prev + 1)
+        }
+    }
+
+    const handleAction = () => {
+        const step = steps[currentStep]
+        if (step.navigateTo) {
+            // Save progress and navigate - DON'T mark as completed
+            // Next time user opens onboarding, they continue from this step
+            if (onMinimize) {
+                onMinimize()
+            }
+            navigate(step.navigateTo)
+        } else {
+            handleNext()
         }
     }
 
@@ -86,16 +112,12 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         handleNext()
     }
 
-    const handleAction = () => {
-        const step = steps[currentStep]
-        if (step.action) {
-            // Mark as completed and close onboarding
-            setCompletedSteps(prev => [...prev, step.id])
-            localStorage.setItem('onboarding_completed', 'true')
-            step.action()
-            onComplete()
+    const handleClose = () => {
+        // Just close without marking as completed - user can reopen anytime
+        if (onMinimize) {
+            onMinimize()
         } else {
-            handleNext()
+            onComplete()
         }
     }
 
@@ -115,19 +137,30 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="w-full max-w-lg p-8 text-center"
+                    className="relative w-full max-w-lg p-8 text-center"
                 >
+                    {/* Close button */}
+                    <button
+                        onClick={handleClose}
+                        className="absolute top-0 right-0 p-2 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Close (you can reopen from Settings)"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+
                     {/* Progress dots */}
                     <div className="flex justify-center gap-2 mb-8">
                         {steps.map((s, i) => (
-                            <div
+                            <button
                                 key={s.id}
-                                className={`h-2 rounded-full transition-all ${i === currentStep
+                                onClick={() => setCurrentStep(i)}
+                                className={`h-2 rounded-full transition-all cursor-pointer hover:opacity-80 ${i === currentStep
                                         ? 'w-8 bg-emerald-500'
                                         : i < currentStep
                                             ? 'w-2 bg-emerald-500/50'
                                             : 'w-2 bg-muted'
                                     }`}
+                                title={`Step ${i + 1}: ${s.title}`}
                             />
                         ))}
                     </div>
@@ -174,5 +207,22 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
                 </motion.div>
             </motion.div>
         </AnimatePresence>
+    )
+}
+
+// Helper component to show "Restart Tour" button in settings or layout
+export function RestartOnboardingButton({ onClick }: { onClick: () => void }) {
+    return (
+        <button
+            onClick={() => {
+                localStorage.removeItem('onboarding_completed')
+                localStorage.setItem('onboarding_step', '0')
+                onClick()
+            }}
+            className="text-sm text-emerald-500 hover:text-emerald-400 font-medium flex items-center gap-1"
+        >
+            <Sparkles className="h-4 w-4" />
+            Restart Tour
+        </button>
     )
 }

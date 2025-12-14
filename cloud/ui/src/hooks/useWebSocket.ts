@@ -18,7 +18,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     const wsRef = useRef<WebSocket | null>(null)
     const [connected, setConnected] = useState(false)
     const [lastMessage, setLastMessage] = useState<WSMessage | null>(null)
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     const connect = useCallback(() => {
         // Get auth token

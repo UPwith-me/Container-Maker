@@ -196,7 +196,7 @@ cm status
 # GitHub Actions
 - name: Setup Dev Container
   run: |
-    curl -LO https://github.com/container-make/cm/releases/latest/download/cm
+    curl -LO https://github.com/UPwith-me/Container-Maker/releases/latest/download/cm
     chmod +x cm
     ./cm prepare
     ./cm run -- make test

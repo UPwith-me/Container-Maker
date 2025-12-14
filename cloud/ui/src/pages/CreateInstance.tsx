@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Cpu, Globe, Rocket } from 'lucide-react'
-import { api, type Provider } from '@/lib/api'
+import { Check, Cpu, Globe, Rocket, Box } from 'lucide-react'
+import { api, type Provider, type Region } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 const instanceTypes = [
     { id: 'cpu-small', name: 'CPU Small', vcpu: 2, ram: '4GB', price: '$0.02/hr', type: 'cpu' },
@@ -14,14 +15,35 @@ const instanceTypes = [
 export default function CreateInstance() {
     const navigate = useNavigate()
     const [providers, setProviders] = useState<Provider[]>([])
-    const [selectedProvider, setSelectedProvider] = useState('aws')
+    const [regions, setRegions] = useState<Region[]>([])
+    const [selectedProvider, setSelectedProvider] = useState('docker')
+    const [selectedRegion, setSelectedRegion] = useState('')
     const [selectedType, setSelectedType] = useState('cpu-small')
     const [name, setName] = useState('')
+    const [dockerImage, setDockerImage] = useState('ubuntu:latest')
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     useEffect(() => {
         api.getProviders().then(setProviders)
     }, [])
+
+    // Fetch regions when provider changes
+    useEffect(() => {
+        if (selectedProvider) {
+            api.getProviderRegions(selectedProvider)
+                .then(data => {
+                    setRegions(data || [])
+                    if (data && data.length > 0) {
+                        setSelectedRegion(data[0].id)
+                    }
+                })
+                .catch(() => {
+                    // Default region for providers without region support
+                    setRegions([{ id: 'local', name: 'Local', country: '', available: true, gpu_available: false }])
+                    setSelectedRegion('local')
+                })
+        }
+    }, [selectedProvider])
 
     const handleSubmit = async () => {
         setIsSubmitting(true)
@@ -30,10 +52,13 @@ export default function CreateInstance() {
                 name: name || 'Untitled Instance',
                 provider: selectedProvider,
                 instance_type: selectedType,
-                region: 'us-east-1'
+                region: selectedRegion || 'us-east-1',
+                image: dockerImage
             })
+            toast.success('Instance created! Deploying...')
             navigate('/')
-        } catch (e) {
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to create instance')
             console.error(e)
         } finally {
             setIsSubmitting(false)
@@ -127,10 +152,36 @@ export default function CreateInstance() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-2">Region</label>
-                        <div className="flex items-center gap-3 px-4 py-2 rounded-md bg-muted/50 border border-border text-muted-foreground cursor-not-allowed">
-                            <Globe className="h-4 w-4" />
-                            <span>US East (N. Virginia)</span>
+                        <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <select
+                                value={selectedRegion}
+                                onChange={(e) => setSelectedRegion(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 rounded-md bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                            >
+                                {regions.map(r => (
+                                    <option key={r.id} value={r.id} disabled={!r.available}>
+                                        {r.name} {r.country && `(${r.country})`} {!r.available && '- Unavailable'}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                            <Box className="h-4 w-4" />
+                            Docker Image
+                        </label>
+                        <input
+                            type="text"
+                            value={dockerImage}
+                            onChange={(e) => setDockerImage(e.target.value)}
+                            placeholder="e.g., python:3.11, node:20, nvidia/cuda:12.0-base"
+                            className="w-full px-4 py-2 rounded-md bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-muted-foreground/50"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Any Docker Hub image or full registry URL
+                        </p>
                     </div>
                 </div>
             </section>

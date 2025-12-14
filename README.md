@@ -1,15 +1,10 @@
 <div align="center">
 
-<img src="assets/logo.png" width="300" alt="Container-Maker Logo" />
+<img src="assets/logo.png" width="200" alt="Container-Maker Logo" />
 
-<h1>
-    <br>
-    ⚡ CONTAINER-MAKER ⚡
-    <br>
-</h1>
+# ⚡ CONTAINER-MAKER
 
-<h3>The Ultimate Developer Experience Platform for the Container Era</h3>
-<h3>容器时代的终极开发体验平台</h3>
+### The Ultimate Developer Experience Platform for the Container Era
 
 <p>
     <a href="https://golang.org"><img src="https://img.shields.io/badge/Built_with-Go_1.21+-00ADD8?style=for-the-badge&logo=go" alt="Go"></a>
@@ -18,307 +13,700 @@
 </p>
 
 <p>
-    <a href="#-english"><b>English</b></a> • <a href="#-chinese"><b>中文白皮书</b></a>
+    <a href="#-quick-start"><b>Quick Start</b></a> •
+    <a href="#-core-features"><b>Features</b></a> •
+    <a href="#-cloud-control-plane"><b>Cloud</b></a> •
+    <a href="#-command-reference"><b>Commands</b></a> •
+    <a href="README_CN.md"><b>中文文档</b></a>
 </p>
 
 <br>
 
-<p align="center" style="max-width: 700px; margin: auto;">
-    <b>Container-Maker (cm)</b> redefines the local development lifecycle. It isn't just a CLI; it's an <b>infrastructure-as-code agent</b> that instantly turns any machine into a production-grade development studio.
-    <br><br>
-    By fusing the <b>speed of Makefiles</b>, the <b>isolation of Docker</b>, and the <b>intelligence of VS Code DevContainers</b>, it delivers a zero-configuration, reproducible, and blazing-fast development experience.
-</p>
-
-<br>
+**Container-Maker (cm)** fuses the speed of Makefiles, the isolation of Docker, and the intelligence of VS Code DevContainers into a single, zero-configuration CLI that transforms any machine into a production-grade development studio.
 
 </div>
 
 ---
 
-<a id="-english"></a>
+## 📑 Table of Contents
 
-## 📖 English
-
-### 🚀 Innovation Highlights
-
-Container-Maker solves the "works on my machine" problem once and for all, while introducing groundbreaking ease-of-use features:
-
-*   **⚡ Zero-Config Onboarding**: New users simply run `cm setup` to auto-detect their OS and install the optimal container engine (Docker/Podman).
-*   **🔌 Smart Agent Integration**: Automatically detects its first run, adds itself to the system PATH, and refreshes the shell session instantly—no restart required.
-*   **🤖 AI-Driven Configuration**: Integrated AI engine (`cm ai generate`) analyzes your project and builds the perfect `devcontainer.json` automatically.
-*   **🌐 Universal Portability**: One configuration works across Windows, Linux, macOS, and WSL2. We handle the complex TTY signals, UID/GID mapping, and socket forwarding transparently.
-*   **🛡️ Enterprise-Grade Security**: Built-in security scanner warns about dangerous mounts (`docker.sock`, privileged mode) and facilitates Rootless Docker adoption.
-*   **📦 Intelligent Caching**: Automatic persistent caching for major languages (Go, Rust, Node, Python, C++, Java, .NET) accelerates incremental builds by up to 10x.
-
-### 💎 Core Value Proposition
-
-<div align="center">
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <h3>🎯 Single Source of Truth</h3>
-      <p><b>Configuration as Code.</b> Your <code>devcontainer.json</code> defines the entire universe. No more maintaining separate Dockerfiles, Makefiles, or shell scripts for local dev.</p>
-    </td>
-    <td width="33%" valign="top">
-      <h3>💎 Native Fidelity</h3>
-      <p><b>Seamless Integration.</b> <code>vim</code>, <code>htop</code>, and interactive shells work exactly as they do locally. We engineered a custom signal proxy to handle window resizing (SIGWINCH) and interrupts perfectly.</p>
-    </td>
-    <td width="33%" valign="top">
-      <h3>🚀 BuildKit Powered</h3>
-      <p><b>Blazing Speed.</b> Leverages Docker BuildKit for aggressive layer caching. Your environment spins up in seconds, not minutes, with intelligent pre-building.</p>
-    </td>
-  </tr>
-</table>
-</div>
-
-### 🌟 Feature Ecosystem
-
-#### 1. Smart Environment Management
-*   **Auto PATH Integration**: On first launch, `cm` intelligently offers to register itself globally, handling PowerShell/Bash PATH updates and session refreshing automatically.
-*   **Full-Stack Environment**: One command (`cm shell`) spins up complex stacks including Databases (PostgreSQL, Redis), Vector DBs (Qdrant), and Monitoring (Prometheus/Grafana) via seamless Docker Compose integration.
-*   **Environment Diagnostics**: `cm doctor` performs deep checks on GPU drivers, network connectivity, disk space, and runtime health.
-
-#### 2. Intelligence & Automation
-*   **AI Config Generator**: `cm ai generate` uses LLMs to inspect your codebase and generate optimized, best-practice DevContainer configurations.
-*   **Template Marketplace**: Instant access to 17+ curated templates for AI/ML (PyTorch, TensorFlow), Web (React, Node), and Systems (Rust, Go).
-    *   `cm marketplace search --gpu` to find GPU-accelerated templates.
-
-#### 3. Seamless Developer Experience
-*   **DevContainer Features (OCI)**: Fully supports the DevContainer Features spec. Download and install tools (e.g., `ghcr.io/devcontainers/features/go`) directly from OCI registries.
-*   **TUI Dashboard**: A beautiful, interactive Terminal UI (`cm status`) to monitor running containers, logs, and resource usage.
-*   **Smart Port Forwarding**: Automatic detection and forwarding of ports defined in `forwardPorts`, supporting TCP/UDP and range mapping.
-
-#### 4. Performance & Security
-*   **Incremental Build Cache**: Language-aware caching strategies mount compiler caches (`/go/pkg`, `node_modules`, `.m2`) into containers automatically.
-*   **Security Guardrails**: Proactive scanning for security risks. Alerts on privileged containers or sensitive mount points.
-*   **Rootless Ready**: Fully compatible with Rootless Docker and Podman security contexts.
-
-### 🛠️ Quick Start
-
-#### Installation
-
-Build from source (Go 1.21+ required):
-```bash
-git clone https://github.com/container-make/cm.git
-cd cm && go build -o cm ./cmd/cm
-```
-
-#### First Run Experience
-
-Simply run `cm` to trigger the **Smart Setup Wizard**:
-
-```bash
-./cm
-```
-
-It will:
-1.  Detect your OS context.
-2.  Offer to add `cm` to your global PATH.
-3.  Refresh your current shell session automatically.
-
-#### One-Click Environment Setup
-
-Validating a new machine? Use our intelligent setup tool:
-
-```bash
-cm setup --auto
-```
-
-This will automatically install and configure Docker Desktop, Podman, or Rancher Desktop based on your system profile.
-
-### 📦 Usage Examples
-
-**1. Instant Dev Environment:**
-```bash
-cd my-project
-cm shell   # Parses devcontainer.json and drops you into a fully configured shell
-```
-
-**2. Running Commands:**
-```bash
-cm run -- go test ./...       # Run tests in container
-cm run -- npm run build       # Build frontend
-cm run -- python train.py     # Train AI model (with GPU support)
-```
-
-**3. Manage Dependencies (Features):**
-```bash
-cm feature download ghcr.io/devcontainers/features/node:1
-cm feature list
-```
-
-**4. Explore Templates:**
-```bash
-cm marketplace list
-cm template use pytorch
-```
-
-### 📋 Command Reference
-
-| Category | Command | Description |
-|----------|---------|-------------|
-| **Core** | `cm shell` | Start/enter persistent development container |
-| | `cm run` | Execute one-off command in container |
-| | `cm setup` | Auto-install Docker/Container runtime |
-| | `cm init` | Initialize project wizard |
-| **AI & Templates** | `cm ai generate` | AI-generated configuration |
-| | `cm marketplace` | Browse/Install community templates |
-| | `cm template` | Manage local templates |
-| **Features** | `cm feature` | OCI Feature download & management |
-| **Ops & Status** | `cm status` | Interactive TUI dashboard |
-| | `cm doctor` | System health & diagnostic check |
-| | `cm cache` | Manage build caches & persistence |
-| **Config** | `cm config` | Global configuration management |
-| | `cm backend` | Switch between Docker/Podman |
+- [What is Container-Maker?](#-what-is-container-maker)
+- [Quick Start](#-quick-start)
+  - [Installation](#installation)
+  - [5-Minute Tutorial](#5-minute-tutorial)
+- [Core Features](#-core-features)
+  - [Zero-Config Onboarding](#1-zero-config-onboarding-cm-setup)
+  - [Environment Diagnostics](#2-environment-diagnostics-cm-doctor)
+  - [Project Initialization](#3-project-initialization-cm-init)
+  - [Container Interaction](#4-container-interaction-cm-shell--run--exec)
+  - [AI Configuration](#5-ai-configuration-cm-ai-generate)
+  - [Template Marketplace](#6-template-marketplace-cm-marketplace)
+  - [VS Code Integration](#7-vs-code-integration-cm-code)
+- [Advanced Features](#-advanced-features)
+  - [DevContainer Features (OCI)](#devcontainer-features-oci)
+  - [Docker Compose Integration](#docker-compose-integration)
+  - [Intelligent Caching](#intelligent-caching)
+  - [Port Forwarding](#port-forwarding)
+  - [File Watching](#file-watching-cm-watch)
+  - [Security Scanning](#security-scanning)
+- [Cloud Control Plane](#-cloud-control-plane)
+  - [Overview](#overview)
+  - [Supported Providers](#supported-providers-14)
+  - [CLI Integration](#cli-integration)
+  - [Web Dashboard](#web-dashboard)
+- [TUI Dashboard](#-tui-dashboard)
+- [Template Library](#-template-library)
+- [Command Reference](#-command-reference)
+- [Configuration Reference](#-configuration-reference)
+- [Clever Design Details](#-clever-design-details)
+- [Security](#-security)
+- [FAQ](#-faq)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ---
 
-<a id="-chinese"></a>
+## 🎯 What is Container-Maker?
 
-## 🇨🇳 中文白皮书
+Container-Maker solves the **"works on my machine"** problem once and for all while delivering a seamless developer experience.
 
-### 🚀 创新与突破
-
-Container-Maker (cm) 不仅仅是一个工具，它是专为解决“在我的机器上能跑”这一世纪难题而生的**基础设施即代码（IaC）智能代理**。它引入了多项突破性技术：
-
-*   **⚡ 零配置智能引导**: 新用户只需运行 `cm setup`，系统即会自动检测操作系统环境，并一键部署最优的容器运行时（Docker/Podman），真正实现开箱即用。
-*   **🔌 智能代理集成**: 首次运行时自动检测，主动请求将 `cm` 添加到系统全局 PATH，并能即时刷新当前的 PowerShell/Bash 会话，无需重启终端即可生效。
-*   **🤖 AI 驱动的配置生成**: 内置 AI 引擎 (`cm ai generate`) 可深入分析您的项目源代码，自动构建符合最佳实践的 `devcontainer.json` 开发环境配置。
-*   **🌐 全平台无缝兼容**: 一套配置，通用 Windows、Linux、macOS 和 WSL2。我们在底层攻克了 TTY 信号透传、UID/GID 动态映射、Socket 转发等技术难题，确保原生般的体验。
-*   **🛡️ 企业级安全防护**: 内置安全扫描器，实时检测危险挂载（如 `docker.sock`）、特权模式等风险，并完美支持 Rootless Docker 架构。
-*   **📦 智能增量构建缓存**: 针对主流语言（Go, Rust, Node, Python, C++, Java, .NET）实现了智能缓存挂载策略，将增量构建速度提升最高 10 倍。
-
-### 💎 核心价值主张
-
-<div align="center">
 <table>
-  <tr>
-    <td width="33%" valign="top">
-      <h3>🎯 单一真理来源</h3>
-      <p><b>配置即一切。</b> 使用简单的 <code>devcontainer.json</code> 定义整个开发宇宙。彻底告别维护复杂的 Dockerfile、Makefile 或本地脚本的时代。</p>
-    </td>
-    <td width="33%" valign="top">
-      <h3>💎 原生级极致体验</h3>
-      <p><b>无感集成。</b> <code>vim</code>、<code>htop</code> 和交互式 Shell 的体验与宿主机完全一致。我们独创的信号代理技术完美解决了窗口缩放 (SIGWINCH) 和中断信号的同步问题。</p>
-    </td>
-    <td width="33%" valign="top">
-      <h3>🚀 BuildKit 极速引擎</h3>
-      <p><b>秒级启动。</b> 深度集成 Docker BuildKit，利用激进的层级缓存策略。环境启动仅需秒级，让开发者的灵感不再被等待打断。</p>
-    </td>
-  </tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🎯 Single Source of Truth
+Your `devcontainer.json` defines the entire universe. No more maintaining separate Dockerfiles, Makefiles, or shell scripts.
+
+</td>
+<td width="33%" valign="top">
+
+### 💎 Native Fidelity
+`vim`, `htop`, and interactive shells work exactly as they do locally. Custom signal proxy handles window resizing (SIGWINCH) perfectly.
+
+</td>
+<td width="33%" valign="top">
+
+### 🚀 BuildKit Powered
+Leverages Docker BuildKit for aggressive layer caching. Your environment spins up in seconds, not minutes.
+
+</td>
+</tr>
 </table>
-</div>
 
-### 🌟 功能生态全景
+### Comparison
 
-#### 1. 智能环境管理体系
-*   **自动 PATH 集成与会话刷新**: 智能识别首次运行状态，提供一键式全局 PATH 注册功能。支持 PowerShell 和 Unix Shell 的会话级环境变量动态刷新，真正做到安装即用。
-*   **全栈环境编排**: 通过 `cm shell` 可一键拉起包含数据库 (PostgreSQL, Redis)、向量引擎 (Qdrant)、监控系统 (Prometheus/Grafana) 的复杂微服务架构。
-*   **环境全维诊断**: `cm doctor` 提供专家级的环境体检，覆盖 GPU 驱动状态、网络连通性、磁盘配额及运行时健康度。
+| Feature | Docker CLI | VS Code DevContainers | **Container-Maker** |
+|---------|------------|----------------------|---------------------|
+| Zero-config startup | ❌ | ⚠️ Requires VS Code | ✅ |
+| Standalone CLI | ✅ | ❌ | ✅ |
+| AI config generation | ❌ | ❌ | ✅ |
+| Cloud deployment | ❌ | ❌ | ✅ |
+| TUI dashboard | ❌ | ❌ | ✅ |
+| Template marketplace | ❌ | ⚠️ Limited | ✅ |
+| Multi-runtime support | ⚠️ Docker only | ⚠️ Docker only | ✅ Docker/Podman |
 
-#### 2. 智能化与自动化
-*   **AI 配置生成器**: 利用大语言模型能力，`cm ai generate` 能够理解您的代码逻辑，生成最匹配的开发容器配置。
-*   **模板市场**: 内置 17+ 款精心调优的官方模板，覆盖 AI/ML (PyTorch, TensorFlow)、Web 全栈、系统编程 (Rust, Go) 等领域。
-    *   支持 `cm marketplace search --gpu` 快速筛选 GPU 加速模板。
+---
 
-#### 3. 卓越的开发者体验
-*   **DevContainer Features (OCI)**: 完整支持 OCI 标准的 DevContainer Features。可直接从 Ghcr.io 等注册表下载并安装工具链（如 Go, Node, K8s 工具），支持版本锁定与参数配置。
-*   **TUI 交互式仪表盘**: 提供极具科技感的终端用户界面 (`cm status`)，实时监控容器状态、日志流及系统资源占用。
-*   **智能端口转发**: 能够解析并自动转发 `forwardPorts` 定义的端口，支持 TCP/UDP 协议及端口范围映射。
+## 🚀 Quick Start
 
-#### 4. 极致性能与安全
-*   **语言感知型缓存**: 自动识别项目语言并挂载相应的编译器缓存目录（如 `/go/pkg`, `node_modules`, `.m2`），显著加速重复构建过程。
-*   **安全合规护栏**: 主动式安全审计功能，对特权容器、敏感路径挂载进行实时警告。
-*   **Rootless 架构支持**: 完美适配无根 Docker (Rootless Docker) 及 Podman 安全上下文，满足企业级合规要求。
+### Installation
 
-### 🛠️ 快速开始
-
-#### 安装
-
-从源码编译 (需要 Go 1.21+):
-```bash
-git clone https://github.com/container-make/cm.git
-cd cm && go build -o cm ./cmd/cm
-```
-
-#### 初次运行体验
-
-直接运行 `cm` 即可触发 **智能设置向导**：
+#### Option 1: Download Prebuilt Binary (Recommended)
 
 ```bash
-./cm
+# Windows (PowerShell)
+irm https://github.com/UPwith-me/Container-Maker/releases/latest/download/cm-windows-amd64.exe -OutFile cm.exe
+
+# Linux / macOS
+curl -Lo cm https://github.com/UPwith-me/Container-Maker/releases/latest/download/cm-linux-amd64
+chmod +x cm && sudo mv cm /usr/local/bin/
 ```
 
-系统将自动：
-1.  识别您的操作系统环境。
-2.  请求并配置全局 PATH 环境变量。
-3.  即时刷新当前 Shell 会话，让 `cm` 命令全局可用。
-
-#### 一键环境部署
-
-在新机器上配置开发环境？使用我们的智能部署工具：
+#### Option 2: Go Install
 
 ```bash
-cm setup --auto
+go install github.com/UPwith-me/Container-Maker/cmd/cm@latest
 ```
 
-该命令将根据您的系统配置，自动下载并安装最佳匹配的 Docker Desktop、Podman 或 Rancher Desktop。
+#### Option 3: Build from Source
 
-### 📦 使用范例
-
-**1. 瞬间进入开发环境:**
 ```bash
-cd my-project
-cm shell   # 自动解析配置，启动并在毫秒级进入持久化开发容器
+git clone https://github.com/UPwith-me/Container-Maker.git
+cd Container-Maker
+go build -o cm ./cmd/cm
 ```
 
-**2. 在容器内执行命令:**
+### 5-Minute Tutorial
+
 ```bash
-cm run -- go test ./...       # 在隔离环境中运行测试
-cm run -- npm run build       # 构建前端资产
-cm run -- python train.py     # 训练 AI 模型 (自动调用 GPU)
+# Step 1: Auto-detect and install Docker/Podman
+cm setup
+
+# Step 2: Initialize a new project with AI assistance
+cm init --template python
+
+# Step 3: Enter the container
+cm shell
+
+# Step 4: Run commands
+cm run python main.py
+
+# Step 5: Open in VS Code
+cm code
 ```
 
-**3. 管理环境扩展 (Features):**
+---
+
+## ✨ Core Features
+
+### 1. Zero-Config Onboarding (`cm setup`)
+
+Automatically detects your OS and installs the optimal container runtime.
+
 ```bash
-cm feature download ghcr.io/devcontainers/features/node:1  # 从 OCI 源下载 Node.js 环境
-cm feature list                                            # 查看已安装的扩展
+cm setup
 ```
 
-**4. 探索官方模板:**
+- **Windows**: Installs Docker Desktop or WSL2 + Docker
+- **Linux**: Installs Docker CE or Podman
+- **macOS**: Installs Docker Desktop or Colima
+
+### 2. Environment Diagnostics (`cm doctor`)
+
+Deep health checks for your development environment.
+
 ```bash
-cm marketplace list        # 浏览模板市场
-cm template use pytorch    # 应用 PyTorch 深度学习模板
+cm doctor
 ```
 
-### 📋 命令速查手册
+Checks include:
+- ✅ Container runtime (Docker/Podman)
+- ✅ GPU support (NVIDIA/AMD)
+- ✅ Network connectivity
+- ✅ Disk space
+- ✅ Docker Compose availability
 
-| 类别 | 命令 | 功能描述 |
-|------|------|----------|
-| **核心功能** | `cm shell` | 启动或进入持久化开发容器 |
-| | `cm run` | 在容器中执行一次性命令 |
-| | `cm setup` | 智能自动化安装 Docker/容器运行时 |
-| | `cm init` | 交互式项目初始化向导 |
-| **AI 与模板** | `cm ai generate` | AI 智能生成项目配置 |
-| | `cm marketplace` | 浏览与安装社区/官方模板 |
-| | `cm template` | 管理本地模板库 |
-| **扩展管理** | `cm feature` | OCI Features 下载与生命周期管理 |
-| **运维与监控** | `cm status` | 交互式 TUI 状态仪表盘 |
-| | `cm doctor` | 系统环境全维诊断专家 |
-| | `cm cache` | 构建缓存管理与持久化 |
-| **配置** | `cm config` | 全局用户配置管理 |
-| | `cm backend` | 容器运行时切换 (Docker/Podman) |
+### 3. Project Initialization (`cm init`)
 
-<br>
+Create new projects from curated templates or let AI generate configurations.
 
-<!-- FOOTER -->
+```bash
+# Interactive mode
+cm init
+
+# Use a specific template
+cm init --template pytorch
+
+# AI-powered generation
+cm ai generate
+```
+
+### 4. Container Interaction (`cm shell` / `run` / `exec`)
+
+Multiple ways to interact with your container:
+
+| Command | Description | Use Case |
+|---------|-------------|----------|
+| `cm shell` | Start persistent container and attach | Interactive development |
+| `cm run <cmd>` | Run command in ephemeral container | One-off builds |
+| `cm exec <cmd>` | Execute in running container | Hot-reload scenarios |
+
+```bash
+# Start a shell session
+cm shell
+
+# Run tests
+cm run pytest tests/
+
+# Execute in background container
+cm exec npm run build
+```
+
+### 5. AI Configuration (`cm ai generate`)
+
+Let AI analyze your project and generate optimized configurations.
+
+```bash
+cm ai generate
+```
+
+- Analyzes `package.json`, `requirements.txt`, `go.mod`, etc.
+- Suggests optimal base images
+- Configures caching strategies
+- Adds appropriate VS Code extensions
+
+### 6. Template Marketplace (`cm marketplace`)
+
+Browse and install community templates.
+
+```bash
+# Search templates
+cm marketplace search pytorch
+
+# List GPU-accelerated templates
+cm marketplace search --gpu
+
+# Install a template
+cm marketplace install ml-pytorch
+```
+
+### 7. VS Code Integration (`cm code`)
+
+Open your project in VS Code with full DevContainer support.
+
+```bash
+cm code
+```
+
+- Automatically detects `devcontainer.json`
+- Launches VS Code with Remote-Containers
+- Works with local and remote containers
+
+---
+
+## 🔧 Advanced Features
+
+### DevContainer Features (OCI)
+
+Install additional tools from OCI registries:
+
+```bash
+# Add Go to your container
+cm feature add ghcr.io/devcontainers/features/go
+
+# Add Docker-in-Docker
+cm feature add ghcr.io/devcontainers/features/docker-in-docker
+```
+
+### Docker Compose Integration
+
+Seamlessly works with `docker-compose.yml`:
+
+```json
+{
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace"
+}
+```
+
+### Intelligent Caching
+
+Automatic persistent caching for major languages:
+
+| Language | Cache Path | Speed Improvement |
+|----------|------------|-------------------|
+| Go | `/go/pkg/mod` | Up to 10x |
+| Node.js | `node_modules` | Up to 5x |
+| Rust | `/usr/local/cargo` | Up to 8x |
+| Python | `~/.cache/pip` | Up to 3x |
+| Java | `~/.m2` | Up to 4x |
+
+### Port Forwarding
+
+Automatic detection and forwarding:
+
+```json
+{
+  "forwardPorts": [3000, 8080, "5432:5432"]
+}
+```
+
+Supports:
+- Single ports: `3000`
+- Port ranges: `8000-8010`
+- Mappings: `"host:container"`
+
+### File Watching (`cm watch`)
+
+Auto-run commands on file changes:
+
+```bash
+# Watch and run tests
+cm watch --run "pytest tests/"
+
+# Watch with custom patterns
+cm watch --pattern "*.py" --run "python main.py"
+```
+
+### Security Scanning
+
+Proactive security warnings:
+
+```bash
+cm doctor --security
+```
+
+Detects:
+- ⚠️ Docker socket mounts
+- ⚠️ Privileged mode
+- ⚠️ Sensitive environment variables
+- ✅ Suggests Rootless Docker alternatives
+
+---
+
+## ☁️ Cloud Control Plane
+
+Container-Maker Cloud extends your local development to the cloud with on-demand GPU instances.
+
+### Overview
+
+- **One-Click GPU Access**: Provision NVIDIA T4, A10, A100 instances
+- **14+ Cloud Providers**: AWS, GCP, Azure, DigitalOcean, and more
+- **Pay-as-you-go**: No upfront costs, billed by the second
+- **Seamless CLI Integration**: `cm cloud` commands
+
+### Supported Providers (14+)
+
+| Provider | GPU Support | Regions |
+|----------|-------------|---------|
+| AWS EC2 | ✅ | 25+ |
+| Google Cloud | ✅ | 35+ |
+| Azure | ✅ | 60+ |
+| DigitalOcean | ❌ | 14 |
+| Hetzner | ❌ | 5 |
+| Linode | ✅ | 11 |
+| Vultr | ✅ | 25 |
+| OCI (Oracle) | ✅ | 41 |
+| Lambda Labs | ✅ | 5 |
+| RunPod | ✅ | 10+ |
+| Vast.ai | ✅ | Community |
+| Paperspace | ✅ | 6 |
+| CoreWeave | ✅ | 3 |
+| Docker (Local) | ✅ | - |
+
+### CLI Integration
+
+```bash
+# Login to cloud
+cm cloud login
+
+# List available instances
+cm cloud instances
+
+# Create a GPU instance
+cm cloud create --provider aws --type gpu-t4 --name ml-training
+
+# Connect via SSH
+cm cloud connect <instance-id>
+
+# Stop instance
+cm cloud stop <instance-id>
+
+# Delete instance
+cm cloud delete <instance-id>
+```
+
+### Web Dashboard
+
+Access the full-featured web dashboard:
+
+```bash
+# Start the local dashboard
+cm cloud dashboard
+
+# Or access the hosted version
+# https://cloud.container-maker.dev
+```
+
+Features:
+- Real-time instance monitoring
+- WebSocket-based log streaming
+- Interactive terminal
+- Usage analytics and billing
+
+---
+
+## 📊 TUI Dashboard
+
+Beautiful terminal UI for monitoring your containers.
+
+```bash
+cm status
+```
+
+Or simply run `cm` without arguments to launch the home screen.
+
+Features:
+- Container list with status
+- Resource usage (CPU/Memory)
+- Log streaming
+- Quick actions (Start/Stop/Delete)
+
+---
+
+## 📦 Template Library
+
+17+ curated templates for various use cases:
+
+### AI/ML
+| Template | Description |
+|----------|-------------|
+| `pytorch` | PyTorch with CUDA support |
+| `tensorflow` | TensorFlow 2.x with GPU |
+| `huggingface` | Transformers + Datasets |
+| `jupyter` | JupyterLab with scientific stack |
+
+### Web Development
+| Template | Description |
+|----------|-------------|
+| `node` | Node.js 20 LTS |
+| `react` | React + Vite |
+| `nextjs` | Next.js 14 |
+| `python-web` | FastAPI / Django |
+
+### Systems Programming
+| Template | Description |
+|----------|-------------|
+| `go` | Go 1.21+ |
+| `rust` | Rust + Cargo |
+| `cpp` | C++ with CMake |
+
+### DevOps
+| Template | Description |
+|----------|-------------|
+| `terraform` | Terraform + Cloud CLIs |
+| `kubernetes` | kubectl + Helm |
+| `ansible` | Ansible + Python |
+
+---
+
+## 📖 Command Reference
+
+### Core Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `cm` | Launch TUI home screen | `cm` |
+| `cm init` | Initialize new project | `cm init --template python` |
+| `cm shell` | Enter persistent container | `cm shell` |
+| `cm run <cmd>` | Run command in container | `cm run make build` |
+| `cm exec <cmd>` | Execute in running container | `cm exec npm test` |
+| `cm prepare` | Build container image | `cm prepare` |
+
+### Environment Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `cm setup` | Install container runtime | `cm setup` |
+| `cm doctor` | Run diagnostics | `cm doctor` |
+| `cm status` | Show TUI dashboard | `cm status` |
+| `cm code` | Open in VS Code | `cm code` |
+
+### AI & Templates
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `cm ai generate` | AI-generate config | `cm ai generate` |
+| `cm marketplace search` | Search templates | `cm marketplace search --gpu` |
+| `cm marketplace install` | Install template | `cm marketplace install pytorch` |
+| `cm template list` | List local templates | `cm template list` |
+
+### Cloud Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `cm cloud login` | Authenticate | `cm cloud login` |
+| `cm cloud instances` | List instances | `cm cloud instances` |
+| `cm cloud create` | Create instance | `cm cloud create --type gpu-t4` |
+| `cm cloud connect` | SSH into instance | `cm cloud connect abc123` |
+| `cm cloud stop` | Stop instance | `cm cloud stop abc123` |
+| `cm cloud delete` | Delete instance | `cm cloud delete abc123` |
+
+### Advanced Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `cm feature add` | Add OCI feature | `cm feature add ghcr.io/devcontainers/features/go` |
+| `cm feature list` | List features | `cm feature list` |
+| `cm cache clean` | Clear build cache | `cm cache clean` |
+| `cm watch` | Watch file changes | `cm watch --run "pytest"` |
+| `cm backend` | Manage runtimes | `cm backend list` |
+| `cm clone` | Clone + enter container | `cm clone github.com/user/repo` |
+
+---
+
+## ⚙️ Configuration Reference
+
+### devcontainer.json
+
+```jsonc
+{
+  // Base image or Dockerfile
+  "image": "mcr.microsoft.com/devcontainers/go:1.21",
+  // Or use a Dockerfile
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "args": { "VARIANT": "1.21" }
+  },
+
+  // Container options
+  "runArgs": ["--cap-add=SYS_PTRACE"],
+  "mounts": ["source=go-mod,target=/go/pkg/mod,type=volume"],
+  "containerEnv": {
+    "CGO_ENABLED": "0"
+  },
+
+  // Lifecycle commands
+  "postCreateCommand": "go mod download",
+  "postStartCommand": "echo 'Ready!'",
+
+  // DevContainer Features
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  // Port forwarding
+  "forwardPorts": [8080, 3000],
+
+  // VS Code customizations
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"],
+      "settings": {
+        "go.useLanguageServer": true
+      }
+    }
+  }
+}
+```
+
+---
+
+## 💡 Clever Design Details
+
+Container-Maker includes several thoughtful touches:
+
+### 🔧 Auto PATH Integration
+
+On first run, `cm` offers to add itself to your system PATH and **refreshes your shell session instantly**—no restart required.
+
+```
+🚀 Container-Maker detected this is your first run.
+   Would you like to add cm to your PATH? [Y/n]
+   ✅ Added to PATH. Session refreshed!
+```
+
+### 🔄 Smart Session Refresh
+
+After modifying environment variables, `cm` automatically refreshes PowerShell/Bash sessions without needing to close and reopen terminals.
+
+### 🎨 Rich TUI Experience
+
+Running `cm` without arguments launches an interactive home screen with:
+- Project detection
+- Quick action menu
+- Container status at a glance
+
+### 📦 Incremental Feature Installation
+
+Features are downloaded once and cached. Subsequent projects reuse cached layers for instant setup.
+
+### 🔍 Intelligent Project Detection
+
+`cm` automatically finds `devcontainer.json` in:
+1. `.devcontainer/devcontainer.json`
+2. `devcontainer.json`
+3. `.devcontainer.json`
+
+---
+
+## 🔒 Security
+
+### Rootless Support
+
+Fully compatible with Rootless Docker and Podman:
+
+```bash
+cm backend switch podman-rootless
+```
+
+### Security Scanning
+
+```bash
+cm doctor --security
+```
+
+Detects and warns about:
+- Docker socket mounts (`/var/run/docker.sock`)
+- Privileged containers
+- Sensitive environment variables
+- Excessive capabilities
+
+### Best Practices
+
+- Use official base images
+- Enable Rootless mode when possible
+- Avoid mounting Docker socket unless necessary
+- Review `runArgs` for security implications
+
+---
+
+## ❓ FAQ
+
+<details>
+<summary><b>Q: Does Container-Maker require VS Code?</b></summary>
+
+No! Container-Maker is a standalone CLI. VS Code integration via `cm code` is optional.
+</details>
+
+<details>
+<summary><b>Q: Can I use Podman instead of Docker?</b></summary>
+
+Yes! Use `cm backend switch podman` to switch runtimes.
+</details>
+
+<details>
+<summary><b>Q: How do I enable GPU support?</b></summary>
+
+1. Install NVIDIA Container Toolkit
+2. Run `cm doctor` to verify
+3. Use GPU-enabled templates: `cm init --template pytorch`
+</details>
+
+<details>
+<summary><b>Q: Where are my files stored inside the container?</b></summary>
+
+By default, your project directory is mounted at `/workspaces/<project-name>`.
+</details>
+
+<details>
+<summary><b>Q: How do I persist data between container restarts?</b></summary>
+
+Use named volumes in your mounts configuration, or the built-in caching system.
+</details>
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions!
+
+```bash
+# Fork and clone
+git clone https://github.com/UPwith-me/Container-Maker.git
+cd Container-Maker
+
+# Build
+go build -o cm ./cmd/cm
+
+# Test
+go test ./...
+```
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
 <div align="center">
-    <br>
-    <p>
-        <sub>Designed for the future of development.</sub>
-        <br>
-        <sub>MIT License © 2025 Devin HE</sub>
-    </p>
-    <br>
-    <a href="#"><img src="https://img.shields.io/github/stars/container-make/cm?style=social" alt="GitHub Stars"></a>
+
+Made with ❤️ by the Container-Maker Team
+
+[⬆ Back to Top](#-container-maker)
+
 </div>

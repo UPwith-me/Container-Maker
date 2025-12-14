@@ -193,6 +193,7 @@ export const api = {
         provider: string
         instance_type: string
         region: string
+        image?: string
     }) => request<Instance>('/instances', {
         method: 'POST',
         body: JSON.stringify(data)

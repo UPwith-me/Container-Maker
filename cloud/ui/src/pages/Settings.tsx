@@ -17,8 +17,9 @@ import {
 import { cn } from '@/lib/utils'
 import { api, type APIKey, type CloudCredential, type User as UserType } from '@/lib/api'
 import { toast } from 'sonner'
-import CredentialModal, { PROVIDER_CONFIGS } from '@/components/CredentialModal'
+import CredentialModal from '@/components/CredentialModal'
 import AdminTab from '@/components/AdminTab'
+import { RestartOnboardingButton } from '@/components/Onboarding'
 
 export default function Settings() {
     const [activeTab, setActiveTab] = useState<'profile' | 'api-keys' | 'credentials' | 'admin'>('profile')
@@ -171,7 +172,10 @@ export default function Settings() {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div>
-                <h2 className="text-2xl font-bold mb-2">Settings</h2>
+                <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-bold">Settings</h2>
+                    <RestartOnboardingButton onClick={() => window.location.reload()} />
+                </div>
                 <p className="text-muted-foreground">Manage your account and integrations</p>
             </div>
 

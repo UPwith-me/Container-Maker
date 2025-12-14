@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Server,
@@ -6,41 +7,67 @@ import {
     Activity,
     Power,
     Trash2,
-    Terminal
+    Terminal,
+    DollarSign,
+    TrendingUp
 } from 'lucide-react'
-import { api, type Instance } from '@/lib/api'
+import { api, type Instance, type UsageData } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function Dashboard() {
     const [instances, setInstances] = useState<Instance[]>([])
+    const [usage, setUsage] = useState<UsageData | null>(null)
     const [loading, setLoading] = useState(true)
 
     const fetchInstances = async () => {
         try {
             const data = await api.getInstances()
             setInstances(data)
-        } catch (e) {
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to load instances')
             console.error(e)
         } finally {
             setLoading(false)
         }
     }
 
+    const fetchUsage = async () => {
+        try {
+            const data = await api.getUsage()
+            setUsage(data)
+        } catch (e) {
+            // Usage data is optional, don't show error
+            console.log('Usage data not available')
+        }
+    }
+
     useEffect(() => {
         fetchInstances()
+        fetchUsage()
         const interval = setInterval(fetchInstances, 5000) // Poll every 5s
         return () => clearInterval(interval)
     }, [])
 
     const handleStop = async (id: string) => {
-        await api.stopInstance(id)
-        fetchInstances() // Optimistic update would be better
+        try {
+            await api.stopInstance(id)
+            toast.success('Instance stopped')
+            fetchInstances()
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to stop instance')
+        }
     }
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure?')) return
-        await api.deleteInstance(id)
-        fetchInstances()
+        try {
+            await api.deleteInstance(id)
+            toast.success('Instance deleted')
+            fetchInstances()
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to delete instance')
+        }
     }
 
     if (loading && instances.length === 0) {
@@ -67,18 +94,31 @@ export default function Dashboard() {
                 <div className="p-6 rounded-xl border border-border/40 bg-card/30 backdrop-blur-sm">
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-sm font-medium text-muted-foreground">Monthly Spend</span>
-                        <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">ESTIMATED</span>
+                        <DollarSign className="h-4 w-4 text-amber-500" />
                     </div>
-                    <div className="text-3xl font-bold">$45.20</div>
+                    <div className="text-3xl font-bold">
+                        {usage ? `$${usage.current_month.total_cost.toFixed(2)}` : '$0.00'}
+                    </div>
+                    {usage && usage.current_month.forecast > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            Forecast: ${usage.current_month.forecast.toFixed(2)}
+                        </div>
+                    )}
                 </div>
                 <div className="p-6 rounded-xl border border-border/40 bg-card/30 backdrop-blur-sm">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm font-medium text-muted-foreground">System Health</span>
+                        <span className="text-sm font-medium text-muted-foreground">Total Hours</span>
                         <Activity className="h-4 w-4 text-emerald-500" />
                     </div>
                     <div className="text-3xl font-bold text-emerald-500 flex items-center gap-2">
-                        99.9%
+                        {usage ? `${(usage.current_month.cpu_hours + usage.current_month.gpu_hours).toFixed(1)}h` : '0h'}
                     </div>
+                    {usage && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                            CPU: {usage.current_month.cpu_hours.toFixed(1)}h • GPU: {usage.current_month.gpu_hours.toFixed(1)}h
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -128,13 +168,15 @@ function InstanceCard({ instance, onStop, onDelete }: {
     onDelete: () => void
 }) {
     const isRunning = instance.status === 'running'
+    const navigate = useNavigate()
 
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="group relative rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden hover:border-emerald-500/30 transition-colors"
+            onClick={() => navigate(`/instances/${instance.id}`)}
+            className="group relative rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm overflow-hidden hover:border-emerald-500/30 transition-colors cursor-pointer"
         >
             {/* Top Bar */}
             <div className="p-5 flex items-start justify-between">
