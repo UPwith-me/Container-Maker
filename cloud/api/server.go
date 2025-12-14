@@ -43,6 +43,7 @@ type Server struct {
 	config    Config
 	db        *db.Database
 	providers *providers.Manager
+	wsHub     *WSHub
 
 	// Legacy in-memory (to be removed after full DB migration)
 	mu        sync.RWMutex
@@ -81,11 +82,16 @@ func NewServer(cfg Config) (*Server, error) {
 	// Initialize provider manager
 	providerManager := providers.GetDefaultManager()
 
+	// Initialize WebSocket hub
+	wsHub := NewWSHub()
+	go wsHub.Run()
+
 	s := &Server{
 		echo:      e,
 		config:    cfg,
 		db:        database,
 		providers: providerManager,
+		wsHub:     wsHub,
 		instances: make(map[string]map[string]interface{}),
 		apiKeys:   make(map[string]map[string]interface{}),
 	}
@@ -138,6 +144,9 @@ func (s *Server) setupRoutes() {
 	v1.GET("/auth/github/callback", s.githubCallback)
 	v1.GET("/auth/google", s.googleOAuth)
 	v1.GET("/auth/google/callback", s.googleCallback)
+
+	// WebSocket endpoint (supports token via query param)
+	v1.GET("/ws", s.HandleWebSocket)
 
 	// Protected routes (require auth)
 	protected := v1.Group("")

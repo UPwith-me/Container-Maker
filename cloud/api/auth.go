@@ -236,3 +236,20 @@ func (s *Server) generateSecureAPIKey() (key, hash string, err error) {
 
 	return key, hash, nil
 }
+
+// validateJWT parses and validates a JWT token, returning the claims
+func (s *Server) validateJWT(tokenString string) (*Claims, error) {
+	// Remove Bearer prefix if present
+	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.config.JWTSecret), nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, err
+	}
+
+	return claims, nil
+}
