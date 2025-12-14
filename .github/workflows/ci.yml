@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.23'
       
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -45,7 +45,21 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.23'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: cloud/ui/package-lock.json
+
+      - name: Build Frontend
+        run: |
+          cd cloud/ui
+          npm ci
+          npm run build
+          cd ../..
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
