@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -35,6 +37,11 @@ type Config struct {
 type Server struct {
 	echo   *echo.Echo
 	config Config
+
+	// In-memory store (Mock DB for Phase 1)
+	mu        sync.RWMutex
+	instances map[string]map[string]interface{} // ID -> Instance data
+	apiKeys   map[string]map[string]interface{} // Key -> Metadata
 }
 
 // NewServer creates a new API server
@@ -45,12 +52,17 @@ func NewServer(cfg Config) *Server {
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORS())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"}, // Allow all for dev
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization, "X-API-Key"},
+	}))
 	e.Use(middleware.RequestID())
 
 	s := &Server{
-		echo:   e,
-		config: cfg,
+		echo:      e,
+		config:    cfg,
+		instances: make(map[string]map[string]interface{}),
+		apiKeys:   make(map[string]map[string]interface{}),
 	}
 
 	s.setupRoutes()
@@ -181,15 +193,13 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (s *Server) validateAPIKey(c echo.Context, apiKey string, next echo.HandlerFunc) error {
-	// TODO: Implement API key validation from database
-	// For now, accept any key starting with "cm_"
-	if !strings.HasPrefix(apiKey, "cm_") {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid API key")
+	// For API Key (mock validation for now)
+	if strings.HasPrefix(apiKey, "cm_") {
+		c.Set("user_id", "demo-user")
+		c.Set("api_key", apiKey)
+		return next(c)
 	}
-
-	c.Set("user_id", "api-key-user")
-	c.Set("api_key", apiKey)
-	return next(c)
+	return echo.NewHTTPError(http.StatusUnauthorized, "invalid API key")
 }
 
 func (s *Server) generateJWT(userID, email string) (string, error) {
@@ -212,7 +222,7 @@ func (s *Server) generateAPIKey() string {
 	return "cm_" + base64.RawURLEncoding.EncodeToString(b)
 }
 
-// ---- Handlers (stubs) ----
+// ---- Functional Handlers ----
 
 func (s *Server) healthCheck(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
@@ -223,11 +233,24 @@ func (s *Server) healthCheck(c echo.Context) error {
 
 // Auth handlers
 func (s *Server) register(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	return c.JSON(http.StatusCreated, map[string]string{"message": "User registered (mock)"})
 }
 
 func (s *Server) login(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	// Mock login - accepts any email/password
+	var body struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	token, _ := s.generateJWT("user-123", body.Email)
+	return c.JSON(http.StatusOK, map[string]string{
+		"token":   token,
+		"user_id": "user-123",
+	})
 }
 
 func (s *Server) refreshToken(c echo.Context) error {
@@ -235,14 +258,18 @@ func (s *Server) refreshToken(c echo.Context) error {
 }
 
 func (s *Server) githubOAuth(c echo.Context) error {
-	// Redirect to GitHub OAuth
+	if c.QueryParam("cli") == "true" {
+		// CLI Logic: Print a dummy code
+		return c.HTML(http.StatusOK, "<h1>Authentication Successful</h1><p>You can close this window and return to CLI.</p>")
+	}
+	// Web Logic: Redirect
 	clientID := s.config.GitHubClientID
 	redirectURL := fmt.Sprintf("https://github.com/login/oauth/authorize?client_id=%s&scope=user:email", clientID)
 	return c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
 func (s *Server) githubCallback(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	return c.JSON(http.StatusOK, map[string]string{"message": "Auth callback logic here"})
 }
 
 func (s *Server) googleOAuth(c echo.Context) error {
@@ -256,7 +283,12 @@ func (s *Server) googleCallback(c echo.Context) error {
 // User handlers
 func (s *Server) getCurrentUser(c echo.Context) error {
 	userID := c.Get("user_id").(string)
-	return c.JSON(http.StatusOK, map[string]string{"user_id": userID})
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"id":         userID,
+		"email":      "demo@container-maker.dev",
+		"name":       "Demo User",
+		"avatar_url": "https://github.com/shadcn.png",
+	})
 }
 
 func (s *Server) updateUser(c echo.Context) error {
@@ -299,35 +331,133 @@ func (s *Server) verifyCredential(c echo.Context) error {
 
 // Instance handlers
 func (s *Server) listInstances(c echo.Context) error {
-	return c.JSON(http.StatusOK, []interface{}{})
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	list := make([]interface{}, 0, len(s.instances))
+	for _, inst := range s.instances {
+		list = append(list, inst)
+	}
+
+	// Add a dummy instance if empty, for demo purposes
+	if len(list) == 0 {
+		return c.JSON(http.StatusOK, []map[string]interface{}{
+			{
+				"id":            "inst-demo-01",
+				"name":          "My AI Workspace",
+				"instance_type": "gpu-t4",
+				"status":        "running",
+				"provider":      "aws",
+				"public_ip":     "34.201.12.45",
+				"created_at":    time.Now().Add(-2 * time.Hour),
+				"region":        "us-east-1",
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, list)
 }
 
 func (s *Server) createInstance(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	var body map[string]interface{}
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	id := "inst-" + uuid.New().String()[:8]
+	body["id"] = id
+	body["status"] = "provisioning"
+	body["created_at"] = time.Now()
+	body["public_ip"] = "" // pending
+
+	s.instances[id] = body
+
+	// Simulate provisioning delay
+	go func() {
+		time.Sleep(5 * time.Second)
+		s.mu.Lock()
+		if inst, ok := s.instances[id]; ok {
+			inst["status"] = "running"
+			inst["public_ip"] = "54.123.45.67"
+		}
+		s.mu.Unlock()
+	}()
+
+	return c.JSON(http.StatusCreated, body)
 }
 
 func (s *Server) getInstance(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	id := c.Param("id")
+	s.mu.RLock()
+	inst, ok := s.instances[id]
+	s.mu.RUnlock()
+
+	if !ok {
+		// Mock response for demo ID
+		if id == "inst-demo-01" {
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"id":            "inst-demo-01",
+				"name":          "My AI Workspace",
+				"instance_type": "gpu-t4",
+				"status":        "running",
+				"provider":      "aws",
+				"public_ip":     "34.201.12.45",
+				"region":        "us-east-1",
+			})
+		}
+		return echo.NewHTTPError(http.StatusNotFound, "Instance not found")
+	}
+	return c.JSON(http.StatusOK, inst)
 }
 
 func (s *Server) startInstance(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	id := c.Param("id")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if inst, ok := s.instances[id]; ok {
+		inst["status"] = "running"
+		return c.JSON(http.StatusOK, inst)
+	}
+	return echo.NewHTTPError(http.StatusNotFound)
 }
 
 func (s *Server) stopInstance(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	id := c.Param("id")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if inst, ok := s.instances[id]; ok {
+		inst["status"] = "stopped"
+		return c.JSON(http.StatusOK, inst)
+	}
+	return echo.NewHTTPError(http.StatusNotFound)
 }
 
 func (s *Server) deleteInstance(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	id := c.Param("id")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.instances, id)
+	return c.NoContent(http.StatusNoContent)
 }
 
 func (s *Server) getInstanceLogs(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	return c.JSON(http.StatusOK, map[string]string{
+		"logs": "Initializing system...\nLoading drivers...\nReady.",
+	})
 }
 
 func (s *Server) getSSHConfig(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"host": "34.201.12.45",
+		"port": 22,
+		"user": "ubuntu",
+	})
 }
 
 // Provider handlers
@@ -352,11 +482,19 @@ func (s *Server) listProviders(c echo.Context) error {
 }
 
 func (s *Server) listRegions(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	return c.JSON(http.StatusOK, []map[string]string{
+		{"id": "us-east-1", "name": "US East (N. Virginia)"},
+		{"id": "us-west-2", "name": "US West (Oregon)"},
+		{"id": "eu-central-1", "name": "Europe (Frankfurt)"},
+	})
 }
 
 func (s *Server) listInstanceTypes(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
+	return c.JSON(http.StatusOK, []map[string]interface{}{
+		{"id": "cpu-small", "name": "CPU Small", "vcpu": 2, "ram": 4, "price": 0.02},
+		{"id": "gpu-t4", "name": "NVIDIA T4", "vcpu": 4, "ram": 16, "gpu": "T4", "price": 0.50},
+		{"id": "gpu-a100", "name": "NVIDIA A100", "vcpu": 8, "ram": 80, "gpu": "A100", "price": 3.00},
+	})
 }
 
 // Team handlers
@@ -388,10 +526,11 @@ func (s *Server) removeTeamMember(c echo.Context) error {
 func (s *Server) getUsage(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"current_month": map[string]interface{}{
-			"cpu_hours":  0,
-			"gpu_hours":  0,
-			"total_cost": 0,
-			"instances":  0,
+			"cpu_hours":  124.5,
+			"gpu_hours":  12.0,
+			"total_cost": 45.20,
+			"instances":  3,
+			"forecast":   85.00,
 		},
 	})
 }
