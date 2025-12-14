@@ -15,6 +15,11 @@ type UserConfig struct {
 	ActiveRemote   string            `json:"active_remote,omitempty"`
 	Team           TeamConfig        `json:"team,omitempty"`
 	Analytics      AnalyticsConfig   `json:"analytics,omitempty"`
+
+	// Cloud Control Plane
+	CloudAPIKey string `json:"cloud_api_key,omitempty"`
+	CloudToken  string `json:"cloud_token,omitempty"`
+	CloudAPIURL string `json:"cloud_api_url,omitempty"`
 }
 
 // AIConfig holds AI-related settings
