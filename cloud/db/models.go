@@ -217,6 +217,7 @@ type Invoice struct {
 	// Stripe
 	StripeInvoiceID       string `gorm:"size:50" json:"-"`
 	StripePaymentIntentID string `gorm:"size:50" json:"-"`
+	InvoiceURL            string `gorm:"size:500" json:"invoice_url,omitempty"` // Stripe hosted invoice URL
 
 	// Period
 	PeriodStart time.Time  `json:"period_start"`

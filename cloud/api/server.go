@@ -158,6 +158,9 @@ func (s *Server) setupRoutes() {
 	protected.GET("/billing/usage", s.getUsage)
 	protected.GET("/billing/invoices", s.listInvoices)
 	protected.POST("/billing/subscription", s.updateSubscription)
+	protected.POST("/billing/portal", s.createBillingPortalSession)
+	protected.POST("/billing/setup-intent", s.createSetupIntent)
+	protected.GET("/billing/invoices/:id/pdf", s.getInvoicePdfUrl)
 
 	// Stripe webhook
 	v1.POST("/webhooks/stripe", s.stripeWebhook)
@@ -381,20 +384,8 @@ func (s *Server) listInstances(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 
 	instances, err := s.db.ListInstancesByUser(userID)
-	if err != nil || len(instances) == 0 {
-		// Return demo instance
-		return c.JSON(http.StatusOK, []map[string]interface{}{
-			{
-				"id":            "inst-demo-01",
-				"name":          "My AI Workspace",
-				"instance_type": "gpu-t4",
-				"status":        "running",
-				"provider":      "aws",
-				"public_ip":     "34.201.12.45",
-				"created_at":    time.Now().Add(-2 * time.Hour),
-				"region":        "us-east-1",
-			},
-		})
+	if err != nil {
+		return c.JSON(http.StatusOK, []db.Instance{})
 	}
 
 	return c.JSON(http.StatusOK, instances)
@@ -402,6 +393,7 @@ func (s *Server) listInstances(c echo.Context) error {
 
 func (s *Server) createInstance(c echo.Context) error {
 	userID := c.Get("user_id").(string)
+	ctx := c.Request().Context()
 
 	var req struct {
 		Name         string `json:"name"`
@@ -413,7 +405,14 @@ func (s *Server) createInstance(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	instance := &db.Instance{
+	// Get the provider
+	provider, err := s.providers.Get(providers.ProviderType(req.Provider))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "unsupported provider: "+req.Provider)
+	}
+
+	// Create instance in database first
+	dbInstance := &db.Instance{
 		ID:           "inst-" + uuid.New().String()[:8],
 		OwnerID:      userID,
 		Name:         req.Name,
@@ -421,24 +420,47 @@ func (s *Server) createInstance(c echo.Context) error {
 		InstanceType: req.InstanceType,
 		Region:       req.Region,
 		Status:       "provisioning",
-		HourlyRate:   0.50, // Default rate
+		HourlyRate:   0.0,
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
 	}
 
-	if err := s.db.CreateInstance(instance); err != nil {
+	// Get pricing
+	for _, pricing := range provider.InstanceTypes() {
+		if string(pricing.Type) == req.InstanceType {
+			dbInstance.HourlyRate = pricing.HourlyRate
+			break
+		}
+	}
+
+	if err := s.db.CreateInstance(dbInstance); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create instance")
 	}
 
-	// Simulate async provisioning
+	// Actually create the instance via provider (async)
 	go func() {
-		time.Sleep(5 * time.Second)
-		instance.Status = "running"
-		instance.PublicIP = "54.123.45.67"
-		s.db.UpdateInstance(instance)
+		config := providers.InstanceConfig{
+			Name:   req.Name,
+			Type:   providers.InstanceType(req.InstanceType),
+			Region: req.Region,
+			Image:  "ubuntu:22.04",
+		}
+
+		providerInst, err := provider.CreateInstance(ctx, config)
+		if err != nil {
+			dbInstance.Status = "error"
+			dbInstance.StatusReason = err.Error()
+		} else {
+			dbInstance.Status = string(providerInst.Status)
+			dbInstance.PublicIP = providerInst.PublicIP
+			dbInstance.ProviderID = providerInst.ID
+			dbInstance.SSHPort = providerInst.SSHPort
+		}
+		dbInstance.UpdatedAt = time.Now().UTC()
+		s.db.UpdateInstance(dbInstance)
 	}()
 
-	return c.JSON(http.StatusCreated, instance)
+	return c.JSON(http.StatusCreated, dbInstance)
 }
 
 func (s *Server) getInstance(c echo.Context) error {
@@ -446,17 +468,6 @@ func (s *Server) getInstance(c echo.Context) error {
 
 	instance, err := s.db.GetInstanceByID(id)
 	if err != nil {
-		if id == "inst-demo-01" {
-			return c.JSON(http.StatusOK, map[string]interface{}{
-				"id":            "inst-demo-01",
-				"name":          "My AI Workspace",
-				"instance_type": "gpu-t4",
-				"status":        "running",
-				"provider":      "aws",
-				"public_ip":     "34.201.12.45",
-				"region":        "us-east-1",
-			})
-		}
 		return echo.NewHTTPError(http.StatusNotFound, "Instance not found")
 	}
 	return c.JSON(http.StatusOK, instance)

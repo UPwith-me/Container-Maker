@@ -83,19 +83,40 @@ export default function Dashboard() {
             </div>
 
             <div>
-                <h2 className="text-lg font-semibold mb-6">Running Instances</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    <AnimatePresence>
-                        {instances.map((instance) => (
-                            <InstanceCard
-                                key={instance.id}
-                                instance={instance}
-                                onStop={() => handleStop(instance.id)}
-                                onDelete={() => handleDelete(instance.id)}
-                            />
-                        ))}
-                    </AnimatePresence>
-                </div>
+                <h2 className="text-lg font-semibold mb-6">Your Instances</h2>
+                {instances.length === 0 ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center justify-center p-12 rounded-xl border border-dashed border-border/60 bg-card/20"
+                    >
+                        <Server className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No instances yet</h3>
+                        <p className="text-muted-foreground text-center mb-6 max-w-md">
+                            Create your first development environment. You can use Docker locally for free,
+                            or connect cloud providers for remote access.
+                        </p>
+                        <a
+                            href="/instances/new"
+                            className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors"
+                        >
+                            Create Your First Instance
+                        </a>
+                    </motion.div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <AnimatePresence>
+                            {instances.map((instance) => (
+                                <InstanceCard
+                                    key={instance.id}
+                                    instance={instance}
+                                    onStop={() => handleStop(instance.id)}
+                                    onDelete={() => handleDelete(instance.id)}
+                                />
+                            ))}
+                        </AnimatePresence>
+                    </div>
+                )}
             </div>
         </div>
     )

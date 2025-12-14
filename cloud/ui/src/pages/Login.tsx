@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Lock, Github, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Mail, Lock, Github, Loader2, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function Login() {
     const navigate = useNavigate()
@@ -31,16 +31,27 @@ export default function Login() {
             const data = await res.json()
             localStorage.setItem('access_token', data.access_token)
             localStorage.setItem('refresh_token', data.refresh_token)
+            toast.success('Welcome back!')
             navigate('/')
         } catch (err: any) {
             setError(err.message)
+            toast.error(err.message)
         } finally {
             setLoading(false)
         }
     }
 
     const handleOAuth = (provider: 'github' | 'google') => {
+        // Check if OAuth is configured by trying to start the flow
+        // The backend will redirect appropriately
+        toast.loading(`Connecting to ${provider}...`)
         window.location.href = `/api/v1/auth/${provider}`
+    }
+
+    const handleDemoLogin = () => {
+        // For demo purposes - skip login
+        toast.success('Using demo mode')
+        navigate('/')
     }
 
     return (
@@ -61,7 +72,8 @@ export default function Login() {
                 <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-8">
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {error && (
-                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 flex-shrink-0" />
                                 {error}
                             </div>
                         )}
@@ -136,6 +148,14 @@ export default function Login() {
                             <span className="text-sm font-medium">Google</span>
                         </button>
                     </div>
+
+                    {/* Demo mode button */}
+                    <button
+                        onClick={handleDemoLogin}
+                        className="w-full mt-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        Continue without login (Demo Mode)
+                    </button>
 
                     <p className="text-center text-sm text-muted-foreground mt-6">
                         Don't have an account?{' '}
