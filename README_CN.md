@@ -4,7 +4,7 @@
 
 # ⚡ CONTAINER-MAKER
 
-### Makefile 与容器之间的缺失环节
+### 面向容器时代的终极开发者体验平台
 
 <p>
     <a href="https://golang.org"><img src="https://img.shields.io/badge/Built_with-Go_1.21+-00ADD8?style=for-the-badge&logo=go" alt="Go"></a>
