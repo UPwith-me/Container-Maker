@@ -4,11 +4,11 @@
 
 # ⚡ CONTAINER-MAKER
 
-### 容器时代的终极开发体验平台
+### Makefile 与容器之间的缺失环节
 
 <p>
     <a href="https://golang.org"><img src="https://img.shields.io/badge/Built_with-Go_1.21+-00ADD8?style=for-the-badge&logo=go" alt="Go"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-ff5252?style=for-the-badge" alt="License"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_3.0-blue?style=for-the-badge" alt="License"></a>
     <a href="#"><img src="https://img.shields.io/badge/Platform-Windows_|_Linux_|_macOS-181717?style=for-the-badge&logo=linux" alt="Platform"></a>
 </p>
 
@@ -22,7 +22,7 @@
 
 <br>
 
-**Container-Maker (cm)** 融合了 Makefile 的速度、Docker 的隔离性和 VS Code DevContainers 的智能化，打造成一个零配置的 CLI 工具，将任何机器转变为生产级开发工作站。
+**Container-Maker (cm)** 填补了本地 Makefile 的简洁性与容器隔离性之间的空白。它是一个零配置的 CLI 工具，通过融合 `make` 的速度与 DevContainers 的智能，将任何机器瞬间转变为生产级开发工作站。
 
 </div>
 
@@ -30,7 +30,7 @@
 
 ## 📑 目录
 
-- [什么是 Container-Maker？](#-什么是-container-maker)
+- [关于项目](#-关于项目)
 - [快速开始](#-快速开始)
   - [安装方式](#安装方式)
   - [5分钟入门](#5分钟入门)
@@ -66,9 +66,9 @@
 
 ---
 
-## 🎯 什么是 Container-Maker？
+## 🎯 关于项目
 
-Container-Maker 彻底解决了 **"在我的机器上能运行"** 的问题，同时提供无缝的开发体验。
+**Container-Maker** 是将容器化开发能力带入命令行的关键缺失环节，让您无需面对复杂的配置即可享受容器的隔离性与一致性。
 
 <table>
 <tr>
