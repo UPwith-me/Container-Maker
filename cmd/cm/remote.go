@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
+	"path/filepath"
 	"strings"
+	"syscall"
 
+	"github.com/container-make/cm/pkg/sync"
 	"github.com/container-make/cm/pkg/userconfig"
 	"github.com/spf13/cobra"
 )
@@ -211,12 +215,211 @@ var remoteRemoveCmd = &cobra.Command{
 	},
 }
 
+// Sync subcommand group
+var remoteSyncCmd = &cobra.Command{
+	Use:   "sync",
+	Short: "File synchronization with remote host",
+	Long: `Manage file synchronization between local and remote host.
+
+File sync uses rsync over SSH to efficiently synchronize your local
+project files with the remote development container.
+
+Examples:
+  cm remote sync start myserver     # Start syncing to remote
+  cm remote sync stop               # Stop sync daemon
+  cm remote sync push               # One-time push to remote
+  cm remote sync pull               # One-time pull from remote`,
+}
+
+var syncRemotePath string
+
+var remoteSyncStartCmd = &cobra.Command{
+	Use:   "start [name]",
+	Short: "Start file sync daemon",
+	Long: `Start continuous file synchronization with remote host.
+
+This will:
+1. Perform an initial full sync to remote
+2. Watch for local file changes
+3. Automatically sync changes to remote
+
+The sync is one-way (local -> remote) by default.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := userconfig.Load()
+		if err != nil {
+			return err
+		}
+
+		name := cfg.ActiveRemote
+		if len(args) > 0 {
+			name = args[0]
+		}
+
+		if name == "" {
+			return fmt.Errorf("no remote host specified")
+		}
+
+		host, ok := cfg.RemoteHosts[name]
+		if !ok {
+			return fmt.Errorf("remote host '%s' not found", name)
+		}
+
+		// Get current directory
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		// Determine remote path
+		remotePath := syncRemotePath
+		if remotePath == "" {
+			projectName := filepath.Base(cwd)
+			remotePath = fmt.Sprintf("/workspace/%s", projectName)
+		}
+
+		fmt.Printf("📂 Local:  %s\n", cwd)
+		fmt.Printf("📡 Remote: %s:%s\n", host, remotePath)
+		fmt.Println()
+
+		// Create syncer
+		syncer, err := sync.New(sync.SyncConfig{
+			LocalPath:  cwd,
+			RemoteHost: host,
+			RemotePath: remotePath,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Handle Ctrl+C
+		ctx, cancel := context.WithCancel(context.Background())
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-sigCh
+			fmt.Println("\n👋 Stopping sync...")
+			cancel()
+		}()
+
+		return syncer.Start(ctx)
+	},
+}
+
+var remoteSyncPushCmd = &cobra.Command{
+	Use:   "push [name]",
+	Short: "One-time sync local to remote",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := userconfig.Load()
+		if err != nil {
+			return err
+		}
+
+		name := cfg.ActiveRemote
+		if len(args) > 0 {
+			name = args[0]
+		}
+
+		if name == "" {
+			return fmt.Errorf("no remote host specified")
+		}
+
+		host, ok := cfg.RemoteHosts[name]
+		if !ok {
+			return fmt.Errorf("remote host '%s' not found", name)
+		}
+
+		cwd, _ := os.Getwd()
+		remotePath := syncRemotePath
+		if remotePath == "" {
+			projectName := filepath.Base(cwd)
+			remotePath = fmt.Sprintf("/workspace/%s", projectName)
+		}
+
+		fmt.Printf("⬆️  Pushing to %s:%s...\n", host, remotePath)
+
+		syncer, err := sync.New(sync.SyncConfig{
+			LocalPath:  cwd,
+			RemoteHost: host,
+			RemotePath: remotePath,
+		})
+		if err != nil {
+			return err
+		}
+
+		if err := syncer.SyncToRemote(); err != nil {
+			return err
+		}
+
+		fmt.Println("✅ Push complete!")
+		return nil
+	},
+}
+
+var remoteSyncPullCmd = &cobra.Command{
+	Use:   "pull [name]",
+	Short: "One-time sync remote to local",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := userconfig.Load()
+		if err != nil {
+			return err
+		}
+
+		name := cfg.ActiveRemote
+		if len(args) > 0 {
+			name = args[0]
+		}
+
+		if name == "" {
+			return fmt.Errorf("no remote host specified")
+		}
+
+		host, ok := cfg.RemoteHosts[name]
+		if !ok {
+			return fmt.Errorf("remote host '%s' not found", name)
+		}
+
+		cwd, _ := os.Getwd()
+		remotePath := syncRemotePath
+		if remotePath == "" {
+			projectName := filepath.Base(cwd)
+			remotePath = fmt.Sprintf("/workspace/%s", projectName)
+		}
+
+		fmt.Printf("⬇️  Pulling from %s:%s...\n", host, remotePath)
+
+		syncer, err := sync.New(sync.SyncConfig{
+			LocalPath:  cwd,
+			RemoteHost: host,
+			RemotePath: remotePath,
+		})
+		if err != nil {
+			return err
+		}
+
+		if err := syncer.SyncFromRemote(); err != nil {
+			return err
+		}
+
+		fmt.Println("✅ Pull complete!")
+		return nil
+	},
+}
+
 func init() {
+	remoteSyncStartCmd.Flags().StringVar(&syncRemotePath, "remote-path", "", "Remote directory path (default: /workspace/<project>)")
+	remoteSyncPushCmd.Flags().StringVar(&syncRemotePath, "remote-path", "", "Remote directory path")
+	remoteSyncPullCmd.Flags().StringVar(&syncRemotePath, "remote-path", "", "Remote directory path")
+
+	remoteSyncCmd.AddCommand(remoteSyncStartCmd)
+	remoteSyncCmd.AddCommand(remoteSyncPushCmd)
+	remoteSyncCmd.AddCommand(remoteSyncPullCmd)
+
 	remoteCmd.AddCommand(remoteAddCmd)
 	remoteCmd.AddCommand(remoteListCmd)
 	remoteCmd.AddCommand(remoteUseCmd)
 	remoteCmd.AddCommand(remoteTestCmd)
 	remoteCmd.AddCommand(remoteShellCmd)
 	remoteCmd.AddCommand(remoteRemoveCmd)
+	remoteCmd.AddCommand(remoteSyncCmd)
 	rootCmd.AddCommand(remoteCmd)
 }
