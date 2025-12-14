@@ -8,6 +8,31 @@ import (
 	"gorm.io/gorm"
 )
 
+// SystemConfig stores system-wide configuration (OAuth, Stripe, etc.)
+// This is encrypted and stored in the database, not environment variables
+type SystemConfig struct {
+	ID    string `gorm:"primaryKey;size:36" json:"id"`
+	Key   string `gorm:"uniqueIndex;size:100" json:"key"`
+	Value string `gorm:"type:text" json:"value"` // Encrypted for secrets
+
+	// Metadata
+	IsSecret    bool      `gorm:"default:false" json:"is_secret"`
+	Description string    `gorm:"size:500" json:"description,omitempty"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UpdatedBy   string    `gorm:"size:36" json:"updated_by,omitempty"`
+}
+
+// Config keys constants
+const (
+	ConfigGitHubClientID     = "oauth.github.client_id"
+	ConfigGitHubClientSecret = "oauth.github.client_secret"
+	ConfigGoogleClientID     = "oauth.google.client_id"
+	ConfigGoogleClientSecret = "oauth.google.client_secret"
+	ConfigStripePublishable  = "stripe.publishable_key"
+	ConfigStripeSecret       = "stripe.secret_key"
+	ConfigStripeWebhook      = "stripe.webhook_secret"
+)
+
 // User represents a registered user
 type User struct {
 	ID           string `gorm:"primaryKey;size:36" json:"id"`

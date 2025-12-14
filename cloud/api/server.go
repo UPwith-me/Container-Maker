@@ -90,8 +90,35 @@ func NewServer(cfg Config) (*Server, error) {
 		apiKeys:   make(map[string]map[string]interface{}),
 	}
 
+	// Load saved configuration from database
+	s.loadSavedConfig()
+
 	s.setupRoutes()
 	return s, nil
+}
+
+// loadSavedConfig loads OAuth/Stripe config from database into memory
+func (s *Server) loadSavedConfig() {
+	// Load GitHub OAuth
+	if cfg, err := s.db.GetConfig(db.ConfigGitHubClientID); err == nil && cfg.Value != "" {
+		s.config.GitHubClientID = cfg.Value
+	}
+	if cfg, err := s.db.GetConfig(db.ConfigGitHubClientSecret); err == nil && cfg.Value != "" {
+		s.config.GitHubClientSecret = cfg.Value
+	}
+
+	// Load Google OAuth
+	if cfg, err := s.db.GetConfig(db.ConfigGoogleClientID); err == nil && cfg.Value != "" {
+		s.config.GoogleClientID = cfg.Value
+	}
+	if cfg, err := s.db.GetConfig(db.ConfigGoogleClientSecret); err == nil && cfg.Value != "" {
+		s.config.GoogleClientSecret = cfg.Value
+	}
+
+	// Load Stripe
+	if cfg, err := s.db.GetConfig(db.ConfigStripeSecret); err == nil && cfg.Value != "" {
+		s.config.StripeSecretKey = cfg.Value
+	}
 }
 
 // setupRoutes configures all API routes
@@ -161,6 +188,10 @@ func (s *Server) setupRoutes() {
 	protected.POST("/billing/portal", s.createBillingPortalSession)
 	protected.POST("/billing/setup-intent", s.createSetupIntent)
 	protected.GET("/billing/invoices/:id/pdf", s.getInvoicePdfUrl)
+
+	// Admin
+	protected.GET("/admin/config", s.getAdminConfig)
+	protected.PUT("/admin/config", s.updateAdminConfig)
 
 	// Stripe webhook
 	v1.POST("/webhooks/stripe", s.stripeWebhook)

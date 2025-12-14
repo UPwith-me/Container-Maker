@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { api, type APIKey, type CloudCredential, type User as UserType } from '@/lib/api'
 import { toast } from 'sonner'
 import CredentialModal, { PROVIDER_CONFIGS } from '@/components/CredentialModal'
+import AdminTab from '@/components/AdminTab'
 
 export default function Settings() {
     const [activeTab, setActiveTab] = useState<'profile' | 'api-keys' | 'credentials' | 'admin'>('profile')
@@ -390,96 +391,7 @@ export default function Settings() {
 
             {/* Admin Tab */}
             {activeTab === 'admin' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                    <div className="p-6 rounded-xl border border-amber-500/40 bg-amber-500/5">
-                        <div className="flex items-center gap-2 mb-4">
-                            <AlertCircle className="h-5 w-5 text-amber-500" />
-                            <h3 className="text-lg font-semibold">Admin Configuration</h3>
-                        </div>
-                        <p className="text-muted-foreground text-sm mb-6">
-                            These settings configure integrations for all users. Only modify if you're self-hosting.
-                        </p>
-
-                        {/* OAuth Configuration */}
-                        <div className="space-y-4 mb-8">
-                            <h4 className="font-medium">OAuth Providers</h4>
-
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">GitHub Client ID</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ov23lixxxxxxxxx"
-                                        className="w-full px-4 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">GitHub Client Secret</label>
-                                    <input
-                                        type="password"
-                                        placeholder="••••••••••••••••"
-                                        className="w-full px-4 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Google Client ID</label>
-                                    <input
-                                        type="text"
-                                        placeholder="xxxxx.apps.googleusercontent.com"
-                                        className="w-full px-4 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Google Client Secret</label>
-                                    <input
-                                        type="password"
-                                        placeholder="••••••••••••••••"
-                                        className="w-full px-4 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Stripe Configuration */}
-                        <div className="space-y-4 mb-6">
-                            <h4 className="font-medium">Stripe Billing</h4>
-
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Publishable Key</label>
-                                    <input
-                                        type="text"
-                                        placeholder="pk_live_xxxxx"
-                                        className="w-full px-4 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Secret Key</label>
-                                    <input
-                                        type="password"
-                                        placeholder="sk_live_xxxxx"
-                                        className="w-full px-4 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Webhook Secret</label>
-                                    <input
-                                        type="password"
-                                        placeholder="whsec_xxxxx"
-                                        className="w-full px-4 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={() => toast.success('Admin settings saved!')}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors"
-                        >
-                            Save Admin Settings
-                        </button>
-                    </div>
-                </motion.div>
+                <AdminTab />
             )}
 
             {/* Credential Modal */}

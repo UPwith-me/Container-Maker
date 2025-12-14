@@ -77,6 +77,7 @@ func New(cfg Config) (*Database, error) {
 		&UsageRecord{},
 		&Invoice{},
 		&Session{},
+		&SystemConfig{},
 	); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
@@ -247,4 +248,59 @@ func (d *Database) DeleteSession(token string) error {
 
 func (d *Database) DeleteExpiredSessions() error {
 	return d.Where("expires_at < ?", time.Now()).Delete(&Session{}).Error
+}
+
+// ---- SystemConfig Operations ----
+
+func (d *Database) GetConfig(key string) (*SystemConfig, error) {
+	var config SystemConfig
+	if err := d.Where("key = ?", key).First(&config).Error; err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+func (d *Database) SetConfig(key, value string, isSecret bool, description string, updatedBy string) error {
+	var config SystemConfig
+	result := d.Where("key = ?", key).First(&config)
+
+	if result.Error != nil {
+		// Create new config
+		config = SystemConfig{
+			ID:          generateUUID(),
+			Key:         key,
+			Value:       value,
+			IsSecret:    isSecret,
+			Description: description,
+			UpdatedAt:   time.Now().UTC(),
+			UpdatedBy:   updatedBy,
+		}
+		return d.Create(&config).Error
+	}
+
+	// Update existing config
+	config.Value = value
+	config.IsSecret = isSecret
+	config.Description = description
+	config.UpdatedAt = time.Now().UTC()
+	config.UpdatedBy = updatedBy
+	return d.Save(&config).Error
+}
+
+func (d *Database) GetAllConfigs() ([]SystemConfig, error) {
+	var configs []SystemConfig
+	if err := d.Find(&configs).Error; err != nil {
+		return nil, err
+	}
+	return configs, nil
+}
+
+func (d *Database) DeleteConfig(key string) error {
+	return d.Where("key = ?", key).Delete(&SystemConfig{}).Error
+}
+
+// Helper function to generate UUID
+func generateUUID() string {
+	// Simple timestamp-based ID for now
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
