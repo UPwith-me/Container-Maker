@@ -116,6 +116,14 @@ func (d *Database) GetUserByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
+func (d *Database) GetUserByStripeCustomerID(customerID string) (*User, error) {
+	var user User
+	if err := d.Where("stripe_customer_id = ?", customerID).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (d *Database) UpdateUser(user *User) error {
 	return d.Save(user).Error
 }

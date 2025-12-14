@@ -177,6 +177,10 @@ func (s *Server) setupRoutes() {
 	protected.GET("/instances/:id/logs", s.getInstanceLogs)
 	protected.GET("/instances/:id/ssh", s.getSSHConfig)
 
+	// Terminal and log streaming WebSockets (uses query param auth)
+	v1.GET("/instances/:id/terminal", s.HandleTerminalWebSocket)
+	v1.GET("/instances/:id/logs/stream", s.HandleLogStreamWebSocket)
+
 	// Providers
 	protected.GET("/providers", s.listProviders)
 	protected.GET("/providers/:name/regions", s.listRegions)
@@ -686,9 +690,4 @@ func (s *Server) listInvoices(c echo.Context) error {
 
 func (s *Server) updateSubscription(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, map[string]string{"error": "not implemented"})
-}
-
-func (s *Server) stripeWebhook(c echo.Context) error {
-	// TODO: Verify Stripe signature and handle events
-	return c.JSON(http.StatusOK, map[string]string{"status": "received"})
 }
