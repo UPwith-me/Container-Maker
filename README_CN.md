@@ -472,7 +472,7 @@ cm status
 
 ## 📦 模板库
 
-17+ 精选模板，适用于各种场景：
+30+ 精选模板，适用于各种场景：
 
 ### AI/ML
 | 模板 | 描述 |
@@ -481,6 +481,20 @@ cm status
 | `tensorflow` | TensorFlow 2.x + GPU |
 | `huggingface` | Transformers + Datasets |
 | `jupyter` | JupyterLab 科学计算栈 |
+
+### 复杂环境 (新增!)
+| 模板 | 描述 |
+|------|------|
+| `miniconda` | Conda/Anaconda 数据科学环境 |
+| `python-poetry` | Poetry 现代包管理 |
+| `python-pipenv` | Pipenv 虚拟环境 |
+| `cpp-conan` | C++ Conan 包管理器 |
+| `cpp-vcpkg` | C++ Vcpkg 库管理 |
+| `cpp-cmake` | C++ CMake 项目 |
+| `java-maven` | Java Maven 项目 |
+| `java-gradle` | Java Gradle 项目 |
+| `dotnet` | .NET 8.0 开发环境 |
+| `php-composer` | PHP Composer 项目 |
 
 ### Web 开发
 | 模板 | 描述 |

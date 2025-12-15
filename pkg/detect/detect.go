@@ -15,6 +15,7 @@ type ProjectType struct {
 	DetectedBy  string
 	Priority    int
 	Description string
+	Template    string // Suggested template name
 }
 
 // DetectedProject contains detection results
@@ -25,21 +26,37 @@ type DetectedProject struct {
 }
 
 // Detection rules - ordered by priority (lower = higher priority)
+// More specific rules should have lower priority numbers
 var detectionRules = []struct {
 	Files       []string
 	Language    string
 	Image       string
 	Priority    int
 	Description string
+	Template    string // Suggested template name
 }{
-	{[]string{"go.mod", "go.sum"}, "Go", "golang:1.21-alpine", 1, "Go project"},
-	{[]string{"package.json"}, "Node.js", "node:20-alpine", 2, "Node.js project"},
-	{[]string{"requirements.txt", "pyproject.toml", "setup.py", "Pipfile"}, "Python", "python:3.11-slim", 3, "Python project"},
-	{[]string{"Cargo.toml"}, "Rust", "rust:alpine", 4, "Rust project"},
-	{[]string{"pom.xml", "build.gradle", "build.gradle.kts"}, "Java", "eclipse-temurin:17", 5, "Java project"},
-	{[]string{"*.csproj", "*.sln"}, ".NET", "mcr.microsoft.com/dotnet/sdk:8.0", 6, ".NET project"},
-	{[]string{"composer.json"}, "PHP", "php:8.2-cli", 7, "PHP project"},
-	{[]string{"Gemfile"}, "Ruby", "ruby:3.2-slim", 8, "Ruby project"},
+	// === Python Complex Environments (highest priority for specific tools) ===
+	{[]string{"environment.yml", "environment.yaml"}, "Python (Conda)", "mcr.microsoft.com/devcontainers/miniconda:3", 1, "Conda environment", "miniconda"},
+	{[]string{"poetry.lock"}, "Python (Poetry)", "mcr.microsoft.com/devcontainers/python:3.11", 2, "Poetry project", "python-poetry"},
+	{[]string{"Pipfile.lock"}, "Python (Pipenv)", "mcr.microsoft.com/devcontainers/python:3.11", 3, "Pipenv project", "python-pipenv"},
+
+	// === C/C++ Complex Build Systems ===
+	{[]string{"conanfile.txt", "conanfile.py"}, "C++ (Conan)", "mcr.microsoft.com/devcontainers/cpp:ubuntu", 4, "C++ Conan project", "cpp-conan"},
+	{[]string{"vcpkg.json"}, "C++ (Vcpkg)", "mcr.microsoft.com/devcontainers/cpp:ubuntu", 5, "C++ Vcpkg project", "cpp-vcpkg"},
+	{[]string{"CMakeLists.txt"}, "C++ (CMake)", "mcr.microsoft.com/devcontainers/cpp:ubuntu", 6, "CMake project", "cpp-cmake"},
+
+	// === Java Build Systems ===
+	{[]string{"pom.xml"}, "Java (Maven)", "mcr.microsoft.com/devcontainers/java:17", 7, "Maven project", "java-maven"},
+	{[]string{"build.gradle", "build.gradle.kts"}, "Java (Gradle)", "mcr.microsoft.com/devcontainers/java:17", 8, "Gradle project", "java-gradle"},
+
+	// === Standard Language Detection ===
+	{[]string{"go.mod", "go.sum"}, "Go", "golang:1.21-alpine", 10, "Go project", "go-basic"},
+	{[]string{"package.json"}, "Node.js", "node:20-alpine", 11, "Node.js project", "node-basic"},
+	{[]string{"requirements.txt", "pyproject.toml", "setup.py", "Pipfile"}, "Python", "python:3.11-slim", 12, "Python project", "python-basic"},
+	{[]string{"Cargo.toml"}, "Rust", "rust:alpine", 13, "Rust project", "rust-basic"},
+	{[]string{"*.csproj", "*.sln"}, ".NET", "mcr.microsoft.com/dotnet/sdk:8.0", 14, ".NET project", "dotnet"},
+	{[]string{"composer.json"}, "PHP", "php:8.2-cli", 15, "PHP project", "php-composer"},
+	{[]string{"Gemfile"}, "Ruby", "ruby:3.2-slim", 16, "Ruby project", "ruby-basic"},
 }
 
 // DetectProjectType scans the current directory for project indicators
@@ -60,6 +77,7 @@ func DetectProjectType(dir string) *DetectedProject {
 					DetectedBy:  filepath.Base(matches[0]),
 					Priority:    rule.Priority,
 					Description: rule.Description,
+					Template:    rule.Template,
 				}
 				result.Types = append(result.Types, pt)
 				break // Only count once per rule
@@ -74,8 +92,9 @@ func DetectProjectType(dir string) *DetectedProject {
 			Language:    "C/C++",
 			Image:       "gcc:latest",
 			DetectedBy:  "Makefile + *.c/*.cpp",
-			Priority:    5,
+			Priority:    20, // Lower priority than CMake
 			Description: "C/C++ project with Makefile",
+			Template:    "cpp-makefile",
 		})
 	}
 

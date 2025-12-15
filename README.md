@@ -472,7 +472,7 @@ Features:
 
 ## 📦 Template Library
 
-17+ curated templates for various use cases:
+30+ curated templates for various use cases:
 
 ### AI/ML
 | Template | Description |
@@ -481,6 +481,20 @@ Features:
 | `tensorflow` | TensorFlow 2.x with GPU |
 | `huggingface` | Transformers + Datasets |
 | `jupyter` | JupyterLab with scientific stack |
+
+### Complex Environments (NEW!)
+| Template | Description |
+|----------|-------------|
+| `miniconda` | Conda/Anaconda data science |
+| `python-poetry` | Poetry modern package manager |
+| `python-pipenv` | Pipenv virtual environments |
+| `cpp-conan` | C++ with Conan package manager |
+| `cpp-vcpkg` | C++ with Vcpkg libraries |
+| `cpp-cmake` | C++ CMake projects |
+| `java-maven` | Java Maven projects |
+| `java-gradle` | Java Gradle projects |
+| `dotnet` | .NET 8.0 development |
+| `php-composer` | PHP with Composer |
 
 ### Web Development
 | Template | Description |

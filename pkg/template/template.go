@@ -186,6 +186,104 @@ func BuiltInTemplates() map[string]*Template {
 			Image:       "python:3.11",
 			PostCreate:  "pip install mlflow dvc boto3 hydra-core omegaconf pytorch-lightning wandb",
 		},
+
+		// === Complex Python Environments ===
+		"miniconda": {
+			Name:        "miniconda",
+			Category:    "Python",
+			Description: "Miniconda 数据科学环境",
+			Image:       "mcr.microsoft.com/devcontainers/miniconda:3",
+			PostCreate:  "if [ -f environment.yml ]; then conda env update -f environment.yml; elif [ -f requirements.txt ]; then pip install -r requirements.txt; fi",
+		},
+		"python-poetry": {
+			Name:        "python-poetry",
+			Category:    "Python",
+			Description: "Poetry 现代Python包管理",
+			Image:       "mcr.microsoft.com/devcontainers/python:3.11",
+			PostCreate:  "pip install poetry && poetry install --no-interaction",
+		},
+		"python-pipenv": {
+			Name:        "python-pipenv",
+			Category:    "Python",
+			Description: "Pipenv 虚拟环境管理",
+			Image:       "mcr.microsoft.com/devcontainers/python:3.11",
+			PostCreate:  "pip install pipenv && pipenv install --dev",
+		},
+
+		// === C/C++ Advanced Build Systems ===
+		"cpp-conan": {
+			Name:        "cpp-conan",
+			Category:    "C++",
+			Description: "C++ Conan 包管理器",
+			Image:       "mcr.microsoft.com/devcontainers/cpp:ubuntu",
+			PostCreate:  "pip install conan && conan profile detect --force && if [ -f conanfile.txt ]; then conan install . --build=missing; fi",
+		},
+		"cpp-vcpkg": {
+			Name:        "cpp-vcpkg",
+			Category:    "C++",
+			Description: "C++ Vcpkg 包管理器",
+			Image:       "mcr.microsoft.com/devcontainers/cpp:ubuntu",
+			Features: map[string]interface{}{
+				"ghcr.io/devcontainers/features/vcpkg:1": map[string]string{},
+			},
+			PostCreate: "if [ -f vcpkg.json ]; then vcpkg install; fi",
+		},
+		"cpp-makefile": {
+			Name:        "cpp-makefile",
+			Category:    "C++",
+			Description: "C++ Makefile 项目",
+			Image:       "gcc:latest",
+			PostCreate:  "apt-get update && apt-get install -y build-essential gdb",
+		},
+
+		// === Java Build Systems ===
+		"java-maven": {
+			Name:        "java-maven",
+			Category:    "Java",
+			Description: "Java Maven 项目",
+			Image:       "mcr.microsoft.com/devcontainers/java:17",
+			Features: map[string]interface{}{
+				"ghcr.io/devcontainers/features/java:1": map[string]string{"version": "17", "installMaven": "true"},
+			},
+			PostCreate: "if [ -f pom.xml ]; then mvn dependency:resolve; fi",
+		},
+		"java-gradle": {
+			Name:        "java-gradle",
+			Category:    "Java",
+			Description: "Java Gradle 项目",
+			Image:       "mcr.microsoft.com/devcontainers/java:17",
+			Features: map[string]interface{}{
+				"ghcr.io/devcontainers/features/java:1": map[string]string{"version": "17", "installGradle": "true"},
+			},
+			PostCreate: "if [ -f build.gradle ]; then gradle dependencies; fi",
+		},
+
+		// === .NET ===
+		"dotnet": {
+			Name:        "dotnet",
+			Category:    ".NET",
+			Description: ".NET 8.0 开发环境",
+			Image:       "mcr.microsoft.com/devcontainers/dotnet:8.0",
+			PostCreate:  "dotnet restore",
+		},
+
+		// === PHP ===
+		"php-composer": {
+			Name:        "php-composer",
+			Category:    "PHP",
+			Description: "PHP Composer 项目",
+			Image:       "mcr.microsoft.com/devcontainers/php:8.2",
+			PostCreate:  "if [ -f composer.json ]; then composer install; fi",
+		},
+
+		// === Ruby ===
+		"ruby-basic": {
+			Name:        "ruby-basic",
+			Category:    "Ruby",
+			Description: "Ruby Bundler 项目",
+			Image:       "ruby:3.2-slim",
+			PostCreate:  "if [ -f Gemfile ]; then bundle install; fi",
+		},
 	}
 }
 
