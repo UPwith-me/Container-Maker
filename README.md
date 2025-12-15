@@ -143,7 +143,7 @@ go build -o cm ./cmd/cm
 # Step 1: Auto-detect and install Docker/Podman
 cm setup
 
-# Step 2: Initialize a new project with AI assistance
+# Step 2: Initialize a new project with specific template
 cm init --template python
 
 # Step 3: Enter the container
