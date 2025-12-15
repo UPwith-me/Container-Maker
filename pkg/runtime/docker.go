@@ -158,6 +158,16 @@ func (r *DockerRuntime) CreateContainer(ctx context.Context, config *ContainerCo
 		})
 	}
 
+	// Convert GPU device requests
+	var deviceRequests []container.DeviceRequest
+	for _, dr := range config.DeviceRequests {
+		deviceRequests = append(deviceRequests, container.DeviceRequest{
+			Count:        dr.Count,
+			DeviceIDs:    dr.DeviceIDs,
+			Capabilities: dr.Capabilities,
+		})
+	}
+
 	hostConfig := &container.HostConfig{
 		Binds:        config.Binds,
 		PortBindings: portBindings,
@@ -169,7 +179,8 @@ func (r *DockerRuntime) CreateContainer(ctx context.Context, config *ContainerCo
 		CapDrop:      config.CapDrop,
 		SecurityOpt:  config.SecurityOpt,
 		Resources: container.Resources{
-			Devices: devices,
+			Devices:        devices,
+			DeviceRequests: deviceRequests,
 		},
 	}
 

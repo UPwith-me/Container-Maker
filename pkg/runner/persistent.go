@@ -460,6 +460,11 @@ func (r *PersistentRunner) createContainer(ctx context.Context, name, imageTag s
 			cfg.Env = append(cfg.Env, fmt.Sprintf("%s=%s", k, v))
 		}
 
+		// Parse runArgs for GPU and other settings
+		if len(r.Config.RunArgs) > 0 {
+			applyRunArgsToRuntimeConfig(r.Config.RunArgs, cfg)
+		}
+
 		// Add port bindings from forwardPorts
 		cfg.PortBindings = make(map[string][]runtime.PortBinding)
 		for _, p := range r.Config.ForwardPorts {
@@ -835,4 +840,76 @@ func (r *PersistentRunner) Resume(ctx context.Context) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// applyRunArgsToRuntimeConfig parses runArgs and applies GPU/shm settings to runtime.ContainerConfig
+func applyRunArgsToRuntimeConfig(runArgs []string, cfg *runtime.ContainerConfig) {
+	for i := 0; i < len(runArgs); i++ {
+		arg := runArgs[i]
+
+		getValue := func() string {
+			if i+1 >= len(runArgs) {
+				return ""
+			}
+			i++
+			return runArgs[i]
+		}
+
+		switch arg {
+		case "--gpus":
+			val := getValue()
+			if val == "" {
+				continue
+			}
+			// Handle GPU access
+			if val == "all" {
+				cfg.DeviceRequests = append(cfg.DeviceRequests, runtime.DeviceRequest{
+					Count:        -1, // -1 means all GPUs
+					Capabilities: [][]string{{"gpu"}},
+				})
+			} else if strings.HasPrefix(val, "device=") {
+				deviceIDs := strings.TrimPrefix(val, "device=")
+				cfg.DeviceRequests = append(cfg.DeviceRequests, runtime.DeviceRequest{
+					DeviceIDs:    strings.Split(deviceIDs, ","),
+					Capabilities: [][]string{{"gpu"}},
+				})
+			} else {
+				cfg.DeviceRequests = append(cfg.DeviceRequests, runtime.DeviceRequest{
+					Count:        -1,
+					Capabilities: [][]string{{"gpu"}},
+				})
+			}
+
+		case "--shm-size":
+			val := getValue()
+			if val == "" {
+				continue
+			}
+			size, err := parseMemorySize(val)
+			if err == nil {
+				cfg.ShmSize = size
+			}
+
+		case "--privileged":
+			cfg.Privileged = true
+
+		case "--cap-add":
+			val := getValue()
+			if val != "" {
+				cfg.CapAdd = append(cfg.CapAdd, val)
+			}
+
+		case "--cap-drop":
+			val := getValue()
+			if val != "" {
+				cfg.CapDrop = append(cfg.CapDrop, val)
+			}
+
+		case "--security-opt":
+			val := getValue()
+			if val != "" {
+				cfg.SecurityOpt = append(cfg.SecurityOpt, val)
+			}
+		}
+	}
 }

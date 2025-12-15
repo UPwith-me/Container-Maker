@@ -51,21 +51,29 @@ type ContainerConfig struct {
 	ExposedPorts map[string]struct{}
 
 	// Host config
-	Binds        []string
-	PortBindings map[string][]PortBinding
-	AutoRemove   bool
-	Init         bool
-	Privileged   bool
-	NetworkMode  string
-	CapAdd       []string
-	CapDrop      []string
-	Devices      []DeviceMapping
-	SecurityOpt  []string
-	ShmSize      int64
+	Binds          []string
+	PortBindings   map[string][]PortBinding
+	AutoRemove     bool
+	Init           bool
+	Privileged     bool
+	NetworkMode    string
+	CapAdd         []string
+	CapDrop        []string
+	Devices        []DeviceMapping
+	DeviceRequests []DeviceRequest // GPU access
+	SecurityOpt    []string
+	ShmSize        int64
 
 	// TTY
 	Tty       bool
 	OpenStdin bool
+}
+
+// DeviceRequest represents a GPU device request
+type DeviceRequest struct {
+	Count        int      // -1 means all GPUs
+	DeviceIDs    []string // Specific device IDs
+	Capabilities [][]string
 }
 
 // PortBinding represents a port binding
