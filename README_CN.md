@@ -143,7 +143,7 @@ go build -o cm ./cmd/cm
 # 步骤 1: 自动检测并安装 Docker/Podman
 cm setup
 
-# 步骤 2: 使用 AI 辅助初始化新项目
+# 步骤 2: 使用指定模板初始化项目
 cm init --template python
 
 # 步骤 3: 进入容器
