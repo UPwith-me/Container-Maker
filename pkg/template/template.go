@@ -1,4 +1,4 @@
-package template
+﻿package template
 
 import (
 	"encoding/json"
@@ -383,7 +383,7 @@ func ListTemplates() string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString("📦 Container-Make Templates\n\n")
+	sb.WriteString("=== Container-Make Templates ===\n\n")
 
 	for _, cat := range cats {
 		sb.WriteString(fmt.Sprintf("  %s:\n", cat))
