@@ -362,6 +362,45 @@ func parseRunArgs(runArgs []string, hostConfig *container.HostConfig, _ *contain
 			}
 			hostConfig.Binds = append(hostConfig.Binds, val)
 
+		case "--gpus":
+			val, err := getValue()
+			if err != nil {
+				return err
+			}
+			// Handle GPU access via DeviceRequests
+			// Common values: "all", "device=0", "device=0,1"
+			if val == "all" {
+				hostConfig.DeviceRequests = append(hostConfig.DeviceRequests, container.DeviceRequest{
+					Count:        -1, // -1 means all GPUs
+					Capabilities: [][]string{{"gpu"}},
+				})
+			} else if strings.HasPrefix(val, "device=") {
+				deviceIDs := strings.TrimPrefix(val, "device=")
+				hostConfig.DeviceRequests = append(hostConfig.DeviceRequests, container.DeviceRequest{
+					DeviceIDs:    strings.Split(deviceIDs, ","),
+					Capabilities: [][]string{{"gpu"}},
+				})
+			} else {
+				// Try to parse as count
+				hostConfig.DeviceRequests = append(hostConfig.DeviceRequests, container.DeviceRequest{
+					Count:        -1,
+					Capabilities: [][]string{{"gpu"}},
+				})
+			}
+
+		case "--shm-size":
+			val, err := getValue()
+			if err != nil {
+				return err
+			}
+			// Parse shm-size (e.g., "8g", "512m", "1073741824")
+			size, err := parseMemorySize(val)
+			if err != nil {
+				fmt.Printf("Warning: invalid --shm-size value '%s': %v\n", val, err)
+			} else {
+				hostConfig.ShmSize = size
+			}
+
 		default:
 			// Ignore unknown flags with warning
 			fmt.Printf("Warning: runArgs flag '%s' is not yet supported and will be ignored\n", arg)
@@ -822,4 +861,38 @@ func isPortInUse(port string, protocol string) bool {
 	}
 
 	return false
+}
+
+// parseMemorySize parses a memory size string (e.g., "8g", "512m", "1073741824")
+// and returns the size in bytes.
+func parseMemorySize(s string) (int64, error) {
+	s = strings.TrimSpace(strings.ToLower(s))
+	if s == "" {
+		return 0, fmt.Errorf("empty size")
+	}
+
+	multiplier := int64(1)
+	numStr := s
+
+	// Check for suffixes
+	if strings.HasSuffix(s, "g") || strings.HasSuffix(s, "gb") {
+		multiplier = 1024 * 1024 * 1024
+		numStr = strings.TrimSuffix(strings.TrimSuffix(s, "gb"), "g")
+	} else if strings.HasSuffix(s, "m") || strings.HasSuffix(s, "mb") {
+		multiplier = 1024 * 1024
+		numStr = strings.TrimSuffix(strings.TrimSuffix(s, "mb"), "m")
+	} else if strings.HasSuffix(s, "k") || strings.HasSuffix(s, "kb") {
+		multiplier = 1024
+		numStr = strings.TrimSuffix(strings.TrimSuffix(s, "kb"), "k")
+	} else if strings.HasSuffix(s, "b") {
+		numStr = strings.TrimSuffix(s, "b")
+	}
+
+	var num int64
+	_, err := fmt.Sscanf(numStr, "%d", &num)
+	if err != nil {
+		return 0, fmt.Errorf("invalid number: %s", numStr)
+	}
+
+	return num * multiplier, nil
 }

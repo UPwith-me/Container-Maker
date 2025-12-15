@@ -492,6 +492,13 @@ func (r *PersistentRunner) createContainer(ctx context.Context, name, imageTag s
 	// Add mounts from config
 	hostConfig.Binds = append(hostConfig.Binds, r.Config.Mounts...)
 
+	// Apply runArgs to hostConfig (for GPU, shm-size, etc.)
+	if len(r.Config.RunArgs) > 0 {
+		if err := parseRunArgs(r.Config.RunArgs, hostConfig, &container.Config{}); err != nil {
+			return "", fmt.Errorf("failed to parse runArgs: %w", err)
+		}
+	}
+
 	// Add port bindings from forwardPorts
 	portBindings := nat.PortMap{}
 	exposedPorts := nat.PortSet{}
