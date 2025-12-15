@@ -15,19 +15,19 @@ import (
 
 var setupCmd = &cobra.Command{
 	Use:   "setup",
-	Short: "一键安装 Docker 容器环境",
-	Long: `智能检测您的系统环境并推荐最佳的容器运行时安装方案。
+	Short: "One-click Docker container environment setup",
+	Long: `Intelligently detect your system and recommend the best container runtime installation.
 
-支持的平台:
+Supported platforms:
   - Windows (Docker Desktop, Rancher Desktop, Podman Desktop)
   - macOS (Docker Desktop, OrbStack, Colima, Podman)
   - Linux (Docker Engine, Podman)
-  - WSL (Windows Docker 或独立安装)
+  - WSL (Windows Docker or standalone)
 
-示例:
-  cm setup              # 交互式安装向导
-  cm setup --detect     # 仅检测环境，不安装
-  cm setup --auto       # 自动安装推荐方案`,
+Examples:
+  cm setup              # Interactive installation wizard
+  cm setup --detect     # Only detect environment
+  cm setup --auto       # Auto-install recommended option`,
 	RunE: runSetup,
 }
 
@@ -37,42 +37,42 @@ var (
 )
 
 func init() {
-	setupCmd.Flags().BoolVar(&setupDetectOnly, "detect", false, "仅检测环境，不执行安装")
-	setupCmd.Flags().BoolVar(&setupAuto, "auto", false, "自动安装推荐的容器运行时")
+	setupCmd.Flags().BoolVar(&setupDetectOnly, "detect", false, "Only detect environment, skip installation")
+	setupCmd.Flags().BoolVar(&setupAuto, "auto", false, "Auto-install the recommended container runtime")
 	rootCmd.AddCommand(setupCmd)
 }
 
 func runSetup(cmd *cobra.Command, args []string) error {
-	fmt.Println("🚀 Container-Maker 环境配置向导")
+	fmt.Println("🚀 Container-Maker Setup Wizard")
 	fmt.Println()
 
 	// Detect host
-	fmt.Println("🔍 正在检测系统环境...")
+	fmt.Println("🔍 Detecting system environment...")
 	host := runtime.DetectHost()
 	fmt.Println()
 	fmt.Println(host.FormatHostInfo())
 
 	// Check if already installed
 	if host.HasDocker || host.HasPodman {
-		fmt.Println("✅ 已检测到容器运行时，无需安装！")
+		fmt.Println("✅ Container runtime detected, no installation needed!")
 		fmt.Println()
 
 		// Run doctor to verify
 		if host.HasDocker {
-			fmt.Println("💡 运行 'cm doctor' 检查 Docker 状态")
+			fmt.Println("💡 Run 'cm doctor' to check Docker status")
 		}
 		return nil
 	}
 
 	if setupDetectOnly {
-		fmt.Println("💡 使用 'cm setup' 开始安装容器运行时")
+		fmt.Println("💡 Use 'cm setup' to install container runtime")
 		return nil
 	}
 
 	// Get installation options
 	options := host.GetInstallOptions()
 	if len(options) == 0 {
-		fmt.Println("❌ 无法为您的系统提供安装建议")
+		fmt.Println("❌ Cannot provide installation recommendations for your system")
 		return nil
 	}
 
@@ -83,12 +83,12 @@ func runSetup(cmd *cobra.Command, args []string) error {
 
 	// Auto mode: install the first (highest priority) option
 	if setupAuto {
-		fmt.Printf("🔧 自动安装: %s\n", options[0].Name)
+		fmt.Printf("🔧 Auto-installing: %s\n", options[0].Name)
 		return executeInstall(options[0])
 	}
 
 	// Interactive mode
-	fmt.Println("📋 推荐的安装选项:")
+	fmt.Println("📋 Recommended installation options:")
 	fmt.Println()
 
 	for i, opt := range options {
@@ -101,20 +101,20 @@ func runSetup(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 	}
 
-	fmt.Print("请选择安装选项 (1-", len(options), ") 或 'q' 退出: ")
+	fmt.Print("Select option (1-", len(options), ") or 'q' to quit: ")
 
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(input)
 
 	if input == "q" || input == "Q" {
-		fmt.Println("已取消")
+		fmt.Println("Cancelled")
 		return nil
 	}
 
 	choice, err := strconv.Atoi(input)
 	if err != nil || choice < 1 || choice > len(options) {
-		fmt.Println("❌ 无效选择")
+		fmt.Println("❌ Invalid selection")
 		return nil
 	}
 
@@ -123,20 +123,20 @@ func runSetup(cmd *cobra.Command, args []string) error {
 
 func executeInstall(opt runtime.InstallOption) error {
 	fmt.Println()
-	fmt.Printf("🔧 正在安装 %s...\n", opt.Name)
+	fmt.Printf("🔧 Installing %s...\n", opt.Name)
 	fmt.Println()
-	fmt.Println("📝 执行命令:")
+	fmt.Println("📝 Executing command:")
 	fmt.Printf("   %s\n", opt.Command)
 	fmt.Println()
 
 	// Confirm
-	fmt.Print("确认执行？[Y/n] ")
+	fmt.Print("Confirm execution? [Y/n] ")
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(strings.ToLower(input))
 
 	if input != "" && input != "y" && input != "yes" {
-		fmt.Println("已取消")
+		fmt.Println("Cancelled")
 		return nil
 	}
 
@@ -158,23 +158,23 @@ func executeInstall(opt runtime.InstallOption) error {
 
 	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("\n❌ 安装失败: %v\n", err)
+		fmt.Printf("\n❌ Installation failed: %v\n", err)
 		fmt.Println()
-		fmt.Println("💡 请尝试手动执行上述命令，或检查错误信息")
+		fmt.Println("💡 Please try running the command manually or check the error")
 		return nil
 	}
 
 	fmt.Println()
-	fmt.Println("✅ 安装完成!")
+	fmt.Println("✅ Installation complete!")
 	fmt.Println()
-	fmt.Println("📋 后续步骤:")
-	fmt.Println("   1. 如果安装了 Docker Desktop，请启动应用程序")
-	fmt.Println("   2. 运行 'cm doctor' 验证安装")
-	fmt.Println("   3. 运行 'cm shell' 开始使用容器开发环境")
+	fmt.Println("📋 Next steps:")
+	fmt.Println("   1. If Docker Desktop was installed, start the application")
+	fmt.Println("   2. Run 'cm doctor' to verify installation")
+	fmt.Println("   3. Run 'cm shell' to start using container dev environment")
 
 	if !isWindows() {
 		fmt.Println()
-		fmt.Println("⚠️  注意: 如果添加了 docker 用户组，需要重新登录或运行:")
+		fmt.Println("⚠️  Note: If you added docker user group, re-login or run:")
 		fmt.Println("   newgrp docker")
 	}
 

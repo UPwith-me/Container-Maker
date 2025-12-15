@@ -30,14 +30,14 @@ func BuiltInTemplates() map[string]*Template {
 		"go-basic": {
 			Name:        "go-basic",
 			Category:    "Go",
-			Description: "Go 基础开发环境",
+			Description: "Go basic development environment",
 			Image:       "golang:1.21-alpine",
 			PostCreate:  "go mod download",
 		},
 		"go-api": {
 			Name:        "go-api",
 			Category:    "Go",
-			Description: "Go API 服务开发 (含 hot-reload)",
+			Description: "Go API development with hot-reload",
 			Image:       "golang:1.21",
 			Features: map[string]interface{}{
 				"ghcr.io/devcontainers/features/go:1": map[string]string{"version": "1.21"},
@@ -49,14 +49,14 @@ func BuiltInTemplates() map[string]*Template {
 		"python-basic": {
 			Name:        "python-basic",
 			Category:    "Python",
-			Description: "Python 基础环境",
+			Description: "Python basic environment",
 			Image:       "python:3.11-slim",
 			PostCreate:  "pip install --upgrade pip",
 		},
 		"python-ml": {
 			Name:        "python-ml",
 			Category:    "Python",
-			Description: "Python 机器学习 (含 Jupyter)",
+			Description: "Python machine learning with Jupyter",
 			Image:       "python:3.11",
 			PostCreate:  "pip install numpy pandas matplotlib scikit-learn jupyter",
 		},
@@ -65,14 +65,14 @@ func BuiltInTemplates() map[string]*Template {
 		"node-basic": {
 			Name:        "node-basic",
 			Category:    "Node.js",
-			Description: "Node.js 基础环境",
+			Description: "Node.js basic environment",
 			Image:       "node:20-alpine",
 			PostCreate:  "npm install",
 		},
 		"node-fullstack": {
 			Name:        "node-fullstack",
 			Category:    "Node.js",
-			Description: "全栈开发环境",
+			Description: "Full-stack development environment",
 			Image:       "node:20",
 			PostCreate:  "npm install",
 		},
@@ -81,7 +81,7 @@ func BuiltInTemplates() map[string]*Template {
 		"rust-basic": {
 			Name:        "rust-basic",
 			Category:    "Rust",
-			Description: "Rust 开发环境",
+			Description: "Rust development environment",
 			Image:       "rust:alpine",
 			PostCreate:  "cargo fetch",
 		},
@@ -90,7 +90,7 @@ func BuiltInTemplates() map[string]*Template {
 		"cpp-cmake": {
 			Name:        "cpp-cmake",
 			Category:    "C++",
-			Description: "C++ CMake 项目",
+			Description: "C++ project with CMake",
 			Image:       "gcc:latest",
 			PostCreate:  "apt-get update && apt-get install -y cmake",
 		},
@@ -99,7 +99,7 @@ func BuiltInTemplates() map[string]*Template {
 		"pytorch": {
 			Name:        "pytorch",
 			Category:    "Deep Learning",
-			Description: "PyTorch 深度学习 (GPU支持)",
+			Description: "PyTorch deep learning with GPU support",
 			Image:       "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
 			RunArgs:     []string{"--gpus", "all"},
 			PostCreate:  "pip install transformers datasets accelerate wandb",
@@ -107,7 +107,7 @@ func BuiltInTemplates() map[string]*Template {
 		"tensorflow": {
 			Name:        "tensorflow",
 			Category:    "Deep Learning",
-			Description: "TensorFlow 深度学习 (GPU支持)",
+			Description: "TensorFlow deep learning with GPU support",
 			Image:       "tensorflow/tensorflow:2.15.0-gpu",
 			RunArgs:     []string{"--gpus", "all"},
 			PostCreate:  "pip install keras tensorboard",
@@ -115,7 +115,7 @@ func BuiltInTemplates() map[string]*Template {
 		"huggingface": {
 			Name:        "huggingface",
 			Category:    "Deep Learning",
-			Description: "HuggingFace 模型微调环境",
+			Description: "HuggingFace model fine-tuning environment",
 			Image:       "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
 			RunArgs:     []string{"--gpus", "all"},
 			PostCreate:  "pip install transformers datasets peft accelerate bitsandbytes trl wandb",
@@ -123,7 +123,7 @@ func BuiltInTemplates() map[string]*Template {
 		"llm-finetune": {
 			Name:        "llm-finetune",
 			Category:    "Deep Learning",
-			Description: "大语言模型微调 (LoRA/QLoRA)",
+			Description: "LLM fine-tuning (LoRA/QLoRA)",
 			Image:       "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
 			RunArgs:     []string{"--gpus", "all", "--shm-size=8g"},
 			PostCreate:  "pip install transformers datasets peft accelerate bitsandbytes trl wandb deepspeed",
@@ -133,7 +133,7 @@ func BuiltInTemplates() map[string]*Template {
 		"rl-gym": {
 			Name:        "rl-gym",
 			Category:    "Deep Learning",
-			Description: "强化学习 (Gymnasium + Stable-Baselines3)",
+			Description: "Reinforcement learning (Gymnasium + Stable-Baselines3)",
 			Image:       "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
 			RunArgs:     []string{"--gpus", "all"},
 			PostCreate:  "pip install gymnasium stable-baselines3 sb3-contrib tensorboard wandb pygame",
@@ -143,7 +143,7 @@ func BuiltInTemplates() map[string]*Template {
 		"jax-flax": {
 			Name:        "jax-flax",
 			Category:    "Deep Learning",
-			Description: "JAX/Flax ML研究环境",
+			Description: "JAX/Flax ML research environment",
 			Image:       "nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04",
 			RunArgs:     []string{"--gpus", "all"},
 			PostCreate:  "pip install jax[cuda12_pip] flax optax orbax-checkpoint chex wandb -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html",
@@ -153,7 +153,7 @@ func BuiltInTemplates() map[string]*Template {
 		"cv-detectron": {
 			Name:        "cv-detectron",
 			Category:    "Deep Learning",
-			Description: "计算机视觉 (Detectron2)",
+			Description: "Computer vision with Detectron2",
 			Image:       "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel",
 			RunArgs:     []string{"--gpus", "all", "--shm-size=8g"},
 			PostCreate:  "pip install opencv-python-headless albumentations timm && pip install 'git+https://github.com/facebookresearch/detectron2.git'",
@@ -163,7 +163,7 @@ func BuiltInTemplates() map[string]*Template {
 		"diffusion": {
 			Name:        "diffusion",
 			Category:    "Deep Learning",
-			Description: "扩散模型 (Stable Diffusion/SDXL)",
+			Description: "Diffusion models (Stable Diffusion/SDXL)",
 			Image:       "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime",
 			RunArgs:     []string{"--gpus", "all", "--shm-size=16g"},
 			PostCreate:  "pip install diffusers transformers accelerate safetensors xformers wandb",
@@ -173,7 +173,7 @@ func BuiltInTemplates() map[string]*Template {
 		"nlp-spacy": {
 			Name:        "nlp-spacy",
 			Category:    "Python",
-			Description: "NLP开发 (spaCy + transformers)",
+			Description: "NLP development (spaCy + transformers)",
 			Image:       "python:3.11",
 			PostCreate:  "pip install spacy transformers datasets nltk gensim sentence-transformers && python -m spacy download en_core_web_sm",
 		},
@@ -182,7 +182,7 @@ func BuiltInTemplates() map[string]*Template {
 		"mlops": {
 			Name:        "mlops",
 			Category:    "Python",
-			Description: "MLOps工具链 (MLflow + DVC)",
+			Description: "MLOps toolchain (MLflow + DVC)",
 			Image:       "python:3.11",
 			PostCreate:  "pip install mlflow dvc boto3 hydra-core omegaconf pytorch-lightning wandb",
 		},
@@ -191,21 +191,21 @@ func BuiltInTemplates() map[string]*Template {
 		"miniconda": {
 			Name:        "miniconda",
 			Category:    "Python",
-			Description: "Miniconda 数据科学环境",
+			Description: "Miniconda data science environment",
 			Image:       "mcr.microsoft.com/devcontainers/miniconda:3",
 			PostCreate:  "if [ -f environment.yml ]; then conda env update -f environment.yml; elif [ -f requirements.txt ]; then pip install -r requirements.txt; fi",
 		},
 		"python-poetry": {
 			Name:        "python-poetry",
 			Category:    "Python",
-			Description: "Poetry 现代Python包管理",
+			Description: "Poetry modern Python package management",
 			Image:       "mcr.microsoft.com/devcontainers/python:3.11",
 			PostCreate:  "pip install poetry && poetry install --no-interaction",
 		},
 		"python-pipenv": {
 			Name:        "python-pipenv",
 			Category:    "Python",
-			Description: "Pipenv 虚拟环境管理",
+			Description: "Pipenv virtual environment management",
 			Image:       "mcr.microsoft.com/devcontainers/python:3.11",
 			PostCreate:  "pip install pipenv && pipenv install --dev",
 		},
@@ -214,14 +214,14 @@ func BuiltInTemplates() map[string]*Template {
 		"cpp-conan": {
 			Name:        "cpp-conan",
 			Category:    "C++",
-			Description: "C++ Conan 包管理器",
+			Description: "C++ with Conan package manager",
 			Image:       "mcr.microsoft.com/devcontainers/cpp:ubuntu",
 			PostCreate:  "pip install conan && conan profile detect --force && if [ -f conanfile.txt ]; then conan install . --build=missing; fi",
 		},
 		"cpp-vcpkg": {
 			Name:        "cpp-vcpkg",
 			Category:    "C++",
-			Description: "C++ Vcpkg 包管理器",
+			Description: "C++ with Vcpkg package manager",
 			Image:       "mcr.microsoft.com/devcontainers/cpp:ubuntu",
 			Features: map[string]interface{}{
 				"ghcr.io/devcontainers/features/vcpkg:1": map[string]string{},
@@ -231,7 +231,7 @@ func BuiltInTemplates() map[string]*Template {
 		"cpp-makefile": {
 			Name:        "cpp-makefile",
 			Category:    "C++",
-			Description: "C++ Makefile 项目",
+			Description: "C++ Makefile project",
 			Image:       "gcc:latest",
 			PostCreate:  "apt-get update && apt-get install -y build-essential gdb",
 		},
@@ -240,7 +240,7 @@ func BuiltInTemplates() map[string]*Template {
 		"java-maven": {
 			Name:        "java-maven",
 			Category:    "Java",
-			Description: "Java Maven 项目",
+			Description: "Java Maven project",
 			Image:       "mcr.microsoft.com/devcontainers/java:17",
 			Features: map[string]interface{}{
 				"ghcr.io/devcontainers/features/java:1": map[string]string{"version": "17", "installMaven": "true"},
@@ -250,7 +250,7 @@ func BuiltInTemplates() map[string]*Template {
 		"java-gradle": {
 			Name:        "java-gradle",
 			Category:    "Java",
-			Description: "Java Gradle 项目",
+			Description: "Java Gradle project",
 			Image:       "mcr.microsoft.com/devcontainers/java:17",
 			Features: map[string]interface{}{
 				"ghcr.io/devcontainers/features/java:1": map[string]string{"version": "17", "installGradle": "true"},
@@ -262,7 +262,7 @@ func BuiltInTemplates() map[string]*Template {
 		"dotnet": {
 			Name:        "dotnet",
 			Category:    ".NET",
-			Description: ".NET 8.0 开发环境",
+			Description: ".NET 8.0 development environment",
 			Image:       "mcr.microsoft.com/devcontainers/dotnet:8.0",
 			PostCreate:  "dotnet restore",
 		},
@@ -271,7 +271,7 @@ func BuiltInTemplates() map[string]*Template {
 		"php-composer": {
 			Name:        "php-composer",
 			Category:    "PHP",
-			Description: "PHP Composer 项目",
+			Description: "PHP with Composer",
 			Image:       "mcr.microsoft.com/devcontainers/php:8.2",
 			PostCreate:  "if [ -f composer.json ]; then composer install; fi",
 		},
@@ -280,7 +280,7 @@ func BuiltInTemplates() map[string]*Template {
 		"ruby-basic": {
 			Name:        "ruby-basic",
 			Category:    "Ruby",
-			Description: "Ruby Bundler 项目",
+			Description: "Ruby with Bundler",
 			Image:       "ruby:3.2-slim",
 			PostCreate:  "if [ -f Gemfile ]; then bundle install; fi",
 		},
