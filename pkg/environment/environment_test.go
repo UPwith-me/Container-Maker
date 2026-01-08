@@ -85,6 +85,13 @@ func TestEnvironmentStruct(t *testing.T) {
 	if env.Status != StatusRunning {
 		t.Errorf("Expected status running, got %s", env.Status)
 	}
+	// Use other fields to silence linter
+	if env.ProjectDir == "" || env.Backend == "" {
+		t.Error("ProjectDir and Backend should be set")
+	}
+	if env.CreatedAt.IsZero() || env.UpdatedAt.IsZero() {
+		t.Error("timestamps should be set")
+	}
 }
 
 func TestFileStateStore(t *testing.T) {
@@ -181,6 +188,10 @@ func TestEnvironmentCreateOptions(t *testing.T) {
 	}
 	if len(opts.GPUs) != 2 {
 		t.Error("GPUs not set correctly")
+	}
+	// Silence linter
+	if opts.Template != "python" || opts.Memory != "8g" || opts.CPU != 4.0 {
+		t.Error("Options not set correctly")
 	}
 }
 

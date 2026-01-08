@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	stateFileName   = "environments.json"
-	activeEnvFile   = "active-environment"
+	stateFileName = "environments.json"
+
 	envStateDirName = ".cm-environments"
 )
 

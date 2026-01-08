@@ -364,7 +364,7 @@ func (m *Manager) ensureImage(ctx context.Context, imageName string) error {
 }
 
 // buildImage builds an image for an environment
-func (m *Manager) buildImage(ctx context.Context, env *Environment, cfg *config.DevContainerConfig) (string, error) {
+func (m *Manager) buildImage(_ context.Context, _ *Environment, _ *config.DevContainerConfig) (string, error) {
 	// Implementation for building from Dockerfile
 	// This would call docker build
 	return "", fmt.Errorf("Dockerfile build not yet implemented for environments")

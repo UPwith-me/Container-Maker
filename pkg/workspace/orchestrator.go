@@ -375,7 +375,7 @@ func (o *Orchestrator) ensureImage(ctx context.Context, imageName string) error 
 }
 
 // buildImage builds an image for a service
-func (o *Orchestrator) buildImage(ctx context.Context, svc *Service, force bool) (string, error) {
+func (o *Orchestrator) buildImage(_ context.Context, svc *Service, _ bool) (string, error) {
 	// Simplified - would implement docker build
 	return "", fmt.Errorf("build not implemented for service %s", svc.Name)
 }

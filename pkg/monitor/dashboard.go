@@ -451,7 +451,7 @@ func (m *DashboardModel) loadMetrics() tea.Msg {
 	return metricsUpdateMsg(result)
 }
 
-func (m *DashboardModel) startLogs(containerID string) tea.Cmd {
+func (m *DashboardModel) startLogs(_ string) tea.Cmd {
 	return func() tea.Msg {
 		// Log streaming would be implemented here
 		return nil
