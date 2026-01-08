@@ -479,6 +479,112 @@ func splitFirst(s, sep string) []string {
 	return []string{s[:idx], s[idx+1:]}
 }
 
+// ==================== Version Commands ====================
+
+var teamPinCmd = &cobra.Command{
+	Use:   "pin <repo>@<version>",
+	Short: "Pin a repository to a specific version",
+	Long: `Pin a team repository to a specific tag or branch.
+When pinned, auto-update is disabled.
+
+Examples:
+  cm team pin hq@v1.2.0
+  cm team pin ml-team@develop`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		parts := splitFirst(args[0], "@")
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid format, use: REPO@VERSION")
+		}
+
+		repoName, version := parts[0], parts[1]
+		if err := team.PinVersion(repoName, version); err != nil {
+			return err
+		}
+
+		fmt.Printf("[OK] Pinned %s to %s\n", repoName, version)
+		fmt.Println("[i] Run 'cm team sync' to update to the pinned version")
+		return nil
+	},
+}
+
+var teamUnpinCmd = &cobra.Command{
+	Use:   "unpin <repo>",
+	Short: "Remove version lock from a repository",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := team.UnpinVersion(args[0]); err != nil {
+			return err
+		}
+		fmt.Printf("[OK] Unpinned %s, auto-update re-enabled\n", args[0])
+		return nil
+	},
+}
+
+var teamLogCmd = &cobra.Command{
+	Use:   "log",
+	Short: "Show audit log of team operations",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		entries, err := team.GetAuditLog(20)
+		if err != nil {
+			return err
+		}
+
+		if len(entries) == 0 {
+			fmt.Println("[i] No audit log entries")
+			fmt.Println("[i] Enable audit logging with: cm team set-audit on")
+			return nil
+		}
+
+		fmt.Println("=== Audit Log (last 20 entries) ===")
+		fmt.Println()
+
+		for _, e := range entries {
+			ts := e.Timestamp.Format("2006-01-02 15:04")
+			switch e.Action {
+			case team.ActionTemplateUse:
+				fmt.Printf("  [%s] Used template: %s\n", ts, e.Template)
+			case team.ActionTeamSync:
+				fmt.Printf("  [%s] Synced repo: %s (%s)\n", ts, e.Repository, e.Result)
+			case team.ActionVersionPin:
+				fmt.Printf("  [%s] Pinned %s to %s\n", ts, e.Repository, e.Details)
+			case team.ActionVersionUnpin:
+				fmt.Printf("  [%s] Unpinned %s\n", ts, e.Repository)
+			default:
+				fmt.Printf("  [%s] %s: %s\n", ts, e.Action, e.Details)
+			}
+		}
+
+		return nil
+	},
+}
+
+var teamSetAuditCmd = &cobra.Command{
+	Use:   "set-audit <on|off>",
+	Short: "Enable or disable audit logging",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := userconfig.Load()
+		if err != nil {
+			cfg = &userconfig.UserConfig{}
+		}
+
+		enabled := args[0] == "on" || args[0] == "true" || args[0] == "1"
+		cfg.Team.AuditLog = enabled
+
+		if err := userconfig.Save(cfg); err != nil {
+			return err
+		}
+
+		if enabled {
+			fmt.Println("[OK] Audit logging enabled")
+		} else {
+			fmt.Println("[OK] Audit logging disabled")
+		}
+		return nil
+	},
+}
+
 func init() {
 	// Config flags
 	teamAddCmd.Flags().StringVar(&teamAddRepoName, "name", "", "Repository name (auto-generated if not set)")
@@ -501,5 +607,9 @@ func init() {
 	teamCmd.AddCommand(teamVarCmd)
 	teamCmd.AddCommand(teamClearCmd)
 	teamCmd.AddCommand(teamAuthCmd)
+	teamCmd.AddCommand(teamPinCmd)
+	teamCmd.AddCommand(teamUnpinCmd)
+	teamCmd.AddCommand(teamLogCmd)
+	teamCmd.AddCommand(teamSetAuditCmd)
 	rootCmd.AddCommand(teamCmd)
 }
