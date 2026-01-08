@@ -251,7 +251,21 @@ cm marketplace search --gpu
 cm marketplace install ml-pytorch
 ```
 
-### 7. VS Code 集成 (`cm code`)
+### 7. 即时分享 (`cm share`)
+
+为团队生成“一键入职”链接。
+
+```bash
+# 生成通用克隆命令
+cm share
+
+# 生成 README Markdown 徽章
+cm share --format markdown
+```
+
+输出类似：`cm clone https://github.com/org/repo`。该命令将克隆仓库、检测配置并立即进入开发环境。
+
+### 8. VS Code 集成 (`cm code`)
 
 在 VS Code 中打开项目，支持完整的 DevContainer。
 
@@ -263,20 +277,47 @@ cm code
 - 启动带有 Remote-Containers 的 VS Code
 - 支持本地和远程容器
 
+### 8. 多服务工作区 (`cm workspace`)
+
+轻松编排复杂的微服务架构。`cm` 管理整个生命周期，包括依赖解析、共享网络和卷持久化。
+
+**生命周期控制：**
+- `cm up`: 按依赖顺序启动所有服务。
+- `cm down`: 停止并移除服务。
+- `cm logs <service>`: 流式传输日志。
+- `cm ps`: 查看工作区进程。
+- `cm workspace graph`: 可视化依赖树。
+
+### 9. Brownfield 迁移 (`cm import`)
+
+无缝迁移现有项目。导入引擎解析 `docker-compose.yml`，执行兼容性分析，并生成原生 CM 配置。
+
+**工作流：**
+- **Analyze**: 生成支持/不支持特性报告。
+- **Import**: 预览并转换服务、卷和网络。
+
+```bash
+cm import docker-compose.yml
+```
+
 ---
 
 ## 🔧 高级功能
 
 ### DevContainer Features (OCI)
 
-从 OCI 注册表安装额外工具：
+从 OCI 注册表安装额外工具，支持本地智能缓存：
 
 ```bash
 # 添加 Go 到容器
 cm feature add ghcr.io/devcontainers/features/go
 
-# 添加 Docker-in-Docker
-cm feature add ghcr.io/devcontainers/features/docker-in-docker
+# 下载并缓存 Feature
+cm feature download node
+
+# 管理本地缓存
+cm feature cache
+cm feature cache clear
 ```
 
 ### Docker Compose 集成
@@ -343,6 +384,63 @@ cm doctor --security
 - ⚠️ 特权模式
 - ⚠️ 敏感环境变量
 - ✅ 建议使用 Rootless Docker
+
+### GPU 管理 (`cm gpu`)
+
+对 AI/ML 开发的一流支持。Container-Maker 包含原生 GPU 调度器。
+
+**功能：**
+- **自动检测**: 通过 `nvidia-smi` 零配置检测 NVIDIA GPU。
+- **硬件监控**: 实时跟踪显存、温度、功耗和利用率。
+- **智能调度**: 支持独占模式（专属任务）和共享模式（多服务共享显存）。
+
+```bash
+# 列出 GPU
+cm gpu list
+
+# 实时监控
+cm gpu status
+
+# 申请资源
+cm gpu allocate training-job --count 2 --vram 16G
+```
+
+### 服务模拟 (`cm mock`)
+
+通过模拟上游依赖加速前端和微服务开发。
+
+**能力：**
+- **动态响应**: 使用 Go 模板生成 JSON。
+- **延迟注入**: 模拟网络抖动和超时。
+- **契约验证**: 验证真实服务是否符合 API 契约 (OpenAPI)。
+
+```bash
+# 快速模拟
+cm mock quick /api/status '{"status": "ok"}'
+
+# 启动全功能服务器
+cm mock serve mocks.yaml
+```
+
+### 企业级安全与合规
+
+#### 策略即代码 (`cm policy`)
+使用类 Rego 的策略引擎强制执行组织标准。
+
+**内置策略:**
+- `SEC-001` 🚨 禁止特权容器
+- `SEC-002` ⚠️ 强制非 root 用户
+- `RES-001` ⚠️ 必须定义内存/CPU 限制
+
+#### SBOM 生成 (`cm sbom`)
+生成软件物料清单 (CycloneDX JSON)，支持 Go, Node.js, Python。
+
+```bash
+cm sbom -o sbom.json
+```
+
+#### 插件系统 (`cm plugin`)
+扩展 Container-Maker 的能力，支持生命周期钩子 (`PreStart`/`PostStart`) 和自定义审计。
 
 ### 远程开发 (`cm remote`)
 
@@ -448,7 +546,20 @@ cm cloud dashboard
 - 实时实例监控
 - WebSocket 日志流
 - 交互式终端
+- 实时实例监控
+- WebSocket 日志流
+- 交互式终端
 - 使用分析和账单
+
+### CLI 命令
+
+```bash
+# 账单与用量
+cm cloud billing
+
+# 列出支持的提供商
+cm cloud providers
+```
 
 ---
 
@@ -589,13 +700,24 @@ cm status
 | `cm remote sync push` | 推送到远程 | `cm remote sync push` |
 | `cm remote sync pull` | 从远程拉取 | `cm remote sync pull` |
 
-### 团队与组织
+### 团队与组织 (`cm team`)
+
+管理企业配置、共享模板和审计日志。
 
 | 命令 | 描述 | 示例 |
 |------|------|------|
-| `cm team set` | 设置组织 | `cm team set mycompany` |
-| `cm team templates` | 设置模板仓库 | `cm team templates <url>` |
-| `cm team info` | 显示团队配置 | `cm team info` |
+| **仓库管理** | | |
+| `cm team add` | 添加模板仓库 | `cm team add https://github.com/org/tmpls` |
+| `cm team sync` | 同步/更新仓库 | `cm team sync` |
+| `cm team list` | 列出缓存模板 | `cm team list` |
+| **企业控制** | | |
+| `cm team auth` | 配置认证 | `cm team auth --token <gh_token>` |
+| `cm team pin` | 锁定仓库版本 | `cm team pin hq@v1.2.0` |
+| `cm team var` | 设置全局变量 | `cm team var REGISTRY=harbor.internal` |
+| **审计** | | |
+| `cm team log` | 查看审计日志 | `cm team log` |
+| `cm team set-audit`| 启用/禁用审计 | `cm team set-audit on` |
+
 
 ---
 
