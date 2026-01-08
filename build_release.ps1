@@ -12,15 +12,16 @@ npm run build
 if ($LASTEXITCODE -ne 0) { Write-Error "Frontend build failed"; exit 1 }
 Set-Location "..\.."
 
-# 2. Build Backend (Pure Go)
-Write-Host "2️⃣  Compiling Go Binary (Static/Pure Go)..." -ForegroundColor Cyan
+# 2. Build Backend (Pure Go, Optimized)
+Write-Host "2️⃣  Compiling Go Binary (Static/Pure Go/Optimized)..." -ForegroundColor Cyan
 $env:CGO_ENABLED = "0"
-go build -o cm-control-plane.exe ./cmd/server
+go build -ldflags="-s -w" -o cm-control-plane.exe ./cmd/server
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Build Success!" -ForegroundColor Green
     Write-Host "👉 Binary: .\cm-control-plane.exe" -ForegroundColor Yellow
     Write-Host "👉 Usage: Just double-click it. No dependencies needed." -ForegroundColor Gray
-} else {
+}
+else {
     Write-Error "Backend build failed"
 }
