@@ -29,10 +29,35 @@ type AIConfig struct {
 	APIBase string `json:"api_base,omitempty"`
 }
 
-// TeamConfig holds team/org settings
+// TeamConfig holds team/org settings for enterprise template management
 type TeamConfig struct {
-	OrgName      string `json:"org_name,omitempty"`
+	OrgName      string            `json:"org_name,omitempty"`
+	OrgLogo      string            `json:"org_logo,omitempty"`     // Brand logo URL
+	Repositories []TeamRepository  `json:"repositories,omitempty"` // Multi-repo support
+	Variables    map[string]string `json:"variables,omitempty"`    // Global template variables
+	AuditLog     bool              `json:"audit_log"`              // Enable usage logging
+
+	// Legacy field for backward compatibility
 	TemplatesURL string `json:"templates_url,omitempty"`
+}
+
+// TeamRepository represents a single team template repository
+type TeamRepository struct {
+	Name     string `json:"name"`             // "hq", "ml-team", "devops"
+	URL      string `json:"url"`              // Git repo URL
+	Branch   string `json:"branch,omitempty"` // Default: main
+	Tag      string `json:"tag,omitempty"`    // Lock to specific version
+	Priority int    `json:"priority"`         // Display order (higher = first)
+
+	// Authentication
+	AuthType    string `json:"auth_type,omitempty"`     // "ssh", "token", "none"
+	TokenEnvVar string `json:"token_env_var,omitempty"` // e.g. "GITHUB_TOKEN"
+
+	// Caching
+	LastSyncTime int64  `json:"last_sync_time,omitempty"`  // Unix timestamp
+	LastCommit   string `json:"last_commit,omitempty"`     // Git commit hash
+	AutoUpdate   bool   `json:"auto_update"`               // Auto-sync on cm init
+	CacheTTL     int    `json:"cache_ttl_hours,omitempty"` // Cache validity (hours)
 }
 
 // AnalyticsConfig holds anonymous usage statistics settings

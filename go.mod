@@ -17,6 +17,7 @@ require (
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
 	golang.org/x/crypto v0.46.0
 	golang.org/x/term v0.38.0
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
