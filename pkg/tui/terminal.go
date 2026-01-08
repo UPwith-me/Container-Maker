@@ -61,8 +61,8 @@ func getWindowsTerminalSize() (int, int) {
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	if len(lines) >= 2 {
 		var w, h int
-		fmt.Sscanf(strings.TrimSpace(lines[0]), "%d", &w)
-		fmt.Sscanf(strings.TrimSpace(lines[1]), "%d", &h)
+		_, _ = fmt.Sscanf(strings.TrimSpace(lines[0]), "%d", &w)
+		_, _ = fmt.Sscanf(strings.TrimSpace(lines[1]), "%d", &h)
 		if w > 0 && h > 0 {
 			return w, h
 		}
@@ -80,7 +80,7 @@ func getUnixTerminalSize() (int, int) {
 	}
 
 	var h, w int
-	fmt.Sscanf(string(output), "%d %d", &h, &w)
+	_, _ = fmt.Sscanf(string(output), "%d %d", &h, &w)
 	if w > 0 && h > 0 {
 		return w, h
 	}

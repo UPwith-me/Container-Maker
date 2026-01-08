@@ -45,12 +45,16 @@ EXAMPLES
 		}
 
 		// Determine name
-		name := "my-workspace"
+		var name string
 		if len(args) > 0 {
 			name = args[0]
 		} else {
 			cwd, _ := os.Getwd()
 			name = filepath.Base(cwd)
+		}
+
+		if name == "" {
+			name = "my-workspace"
 		}
 
 		// Create default workspace

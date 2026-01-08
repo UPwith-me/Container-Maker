@@ -2,10 +2,10 @@
 
 import (
 	"context"
-	"strings"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,12 +17,12 @@ import (
 
 // Orchestrator manages service lifecycle for a workspace
 type Orchestrator struct {
-	workspace     *Workspace
-	graph         *Graph
-	dockerClient  *client.Client
-	envManager    *environment.Manager
-	state         *WorkspaceState
-	mu            sync.RWMutex
+	workspace    *Workspace
+	graph        *Graph
+	dockerClient *client.Client
+	envManager   *environment.Manager
+	state        *WorkspaceState
+	mu           sync.RWMutex
 }
 
 // NewOrchestrator creates a new orchestrator for a workspace
@@ -221,9 +221,9 @@ func (o *Orchestrator) startService(ctx context.Context, svc *Service, opts Star
 		Tty:        true,
 		OpenStdin:  true,
 		Labels: map[string]string{
-			"cm.managed_by":    "container-maker",
-			"cm.workspace":     o.workspace.Name,
-			"cm.service":       svc.Name,
+			"cm.managed_by": "container-maker",
+			"cm.workspace":  o.workspace.Name,
+			"cm.service":    svc.Name,
 		},
 	}
 
@@ -463,9 +463,6 @@ func parseMemoryLimit(s string) int64 {
 	}
 
 	var value int64
-	fmt.Sscanf(s, "%d", &value)
+	_, _ = fmt.Sscanf(s, "%d", &value)
 	return value * multiplier
 }
-
-
-

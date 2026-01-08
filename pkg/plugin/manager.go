@@ -27,7 +27,7 @@ func GetManager() *Manager {
 			plugins: make(map[string]Plugin),
 		}
 		// Register built-in plugins here usually
-		instance.Register(NewAuditPlugin())
+		_ = instance.Register(NewAuditPlugin())
 	})
 	return instance
 }

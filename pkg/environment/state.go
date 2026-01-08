@@ -64,11 +64,6 @@ func (s *FileStateStore) getStatePath() string {
 	return filepath.Join(s.baseDir, stateFileName)
 }
 
-// getActiveEnvPath returns the path to the active environment file
-func (s *FileStateStore) getActiveEnvPath() string {
-	return filepath.Join(s.baseDir, activeEnvFile)
-}
-
 // load reads the state from disk
 func (s *FileStateStore) load() error {
 	s.mu.Lock()

@@ -349,7 +349,7 @@ var envDeleteCmd = &cobra.Command{
 		if !envDeleteForce {
 			fmt.Printf("Delete environment '%s'? This cannot be undone. [y/N] ", name)
 			var response string
-			fmt.Scanln(&response)
+			_, _ = fmt.Scanln(&response)
 			if strings.ToLower(response) != "y" {
 				fmt.Println("Cancelled.")
 				return nil

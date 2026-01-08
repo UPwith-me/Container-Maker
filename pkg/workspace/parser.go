@@ -295,12 +295,12 @@ func ParsePortConfig(port interface{}) (*PortConfig, error) {
 		parts := strings.Split(v, ":")
 		if len(parts) == 1 {
 			var p int
-			fmt.Sscanf(parts[0], "%d", &p)
+			_, _ = fmt.Sscanf(parts[0], "%d", &p)
 			return &PortConfig{Target: p, Published: p, Protocol: "tcp"}, nil
 		}
 		var host, container int
-		fmt.Sscanf(parts[0], "%d", &host)
-		fmt.Sscanf(parts[1], "%d", &container)
+		_, _ = fmt.Sscanf(parts[0], "%d", &host)
+		_, _ = fmt.Sscanf(parts[1], "%d", &container)
 		return &PortConfig{Target: container, Published: host, Protocol: "tcp"}, nil
 	default:
 		return nil, fmt.Errorf("invalid port format: %v", port)

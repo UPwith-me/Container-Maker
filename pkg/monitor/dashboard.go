@@ -70,7 +70,6 @@ type DashboardModel struct {
 	width       int
 	height      int
 	showLogs    bool
-	logLines    []string
 	spinner     spinner.Model
 	loading     bool
 	err         error
@@ -320,7 +319,7 @@ func (m *DashboardModel) renderContainerList() string {
 		netIO := "-"
 		if metrics, ok := m.metrics[c.ID]; ok {
 			cpu = fmt.Sprintf("%.1f%%", metrics.CPUPercent)
-			mem = fmt.Sprintf("%s", formatBytes(metrics.MemoryUsed))
+			mem = formatBytes(metrics.MemoryUsed)
 			netIO = fmt.Sprintf("%s/%s", formatBytes(metrics.NetworkRx), formatBytes(metrics.NetworkTx))
 		}
 

@@ -278,7 +278,7 @@ func (s *SimpleScheduler) ReleaseByOwner(owner string) error {
 		}
 	}
 	for _, id := range toRelease {
-		s.Release(id)
+		_ = s.Release(id)
 	}
 	return nil
 }
@@ -331,7 +331,12 @@ func (s *SimpleScheduler) WaitForGPUs(req GPURequirements, timeout time.Duration
 			return alloc, nil
 		}
 		time.Sleep(5 * time.Second)
-		s.scan()
+		time.Sleep(5 * time.Second)
+		if err := s.scan(); err != nil {
+			// If scan fails, we might just retry, or return error.
+			// For wait, retrying is safer.
+			continue
+		}
 	}
 
 	return nil, fmt.Errorf("timeout waiting for GPUs")

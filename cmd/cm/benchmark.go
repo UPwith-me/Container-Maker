@@ -150,11 +150,11 @@ func benchmarkContainerStartup() (time.Duration, error) {
 }
 
 // benchmarkVersion returns a simple version for testing
-var benchmarkVersionCmd = &cobra.Command{
-	Use:    "version --short",
-	Hidden: true,
-	Run:    func(cmd *cobra.Command, args []string) {},
-}
+// var benchmarkVersionCmd = &cobra.Command{
+// 	Use:    "version --short",
+// 	Hidden: true,
+// 	Run:    func(cmd *cobra.Command, args []string) {},
+// }
 
 func init() {
 	benchmarkCmd.Flags().IntVar(&benchmarkIterations, "iterations", 5, "Number of iterations for startup benchmark")

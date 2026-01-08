@@ -246,7 +246,8 @@ type WorkspaceManager interface {
 
 // DependencyGraph represents service dependencies
 type DependencyGraph struct {
-	nodes map[string]*DependencyNode
+	// nodes map[string]*DependencyNode
+
 }
 
 // DependencyNode represents a service in the dependency graph

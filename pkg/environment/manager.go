@@ -52,7 +52,7 @@ func NewManager() (*Manager, error) {
 // generateID generates a unique environment ID
 func generateID() string {
 	bytes := make([]byte, 8)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes)
 	return "env-" + hex.EncodeToString(bytes)
 }
 
@@ -142,7 +142,7 @@ func (m *Manager) Create(ctx context.Context, opts EnvironmentCreateOptions) (*E
 	// Save initial state
 	if err := m.store.Save(env); err != nil {
 		// Cleanup network on failure
-		m.networkManager.DeleteNetwork(ctx, networkID)
+		_ = m.networkManager.DeleteNetwork(ctx, networkID)
 		return nil, err
 	}
 
@@ -152,12 +152,12 @@ func (m *Manager) Create(ctx context.Context, opts EnvironmentCreateOptions) (*E
 			// Update status to error
 			env.Status = StatusError
 			env.StatusMsg = err.Error()
-			m.store.Save(env)
+			_ = m.store.Save(env)
 			return env, err
 		}
 	} else {
 		env.Status = StatusStopped
-		m.store.Save(env)
+		_ = m.store.Save(env)
 	}
 
 	// Link to other environments if requested
@@ -440,7 +440,7 @@ func (m *Manager) Delete(ctx context.Context, nameOrID string, force bool) error
 				"Stop the environment first with 'cm env stop' or use --force",
 			)
 		}
-		m.Stop(ctx, nameOrID, 5)
+		_ = m.Stop(ctx, nameOrID, 5)
 	}
 
 	// Remove container
@@ -454,7 +454,7 @@ func (m *Manager) Delete(ctx context.Context, nameOrID string, force bool) error
 
 	// Remove network
 	if env.NetworkID != "" {
-		m.networkManager.ForceDeleteNetwork(ctx, env.NetworkID)
+		_ = m.networkManager.ForceDeleteNetwork(ctx, env.NetworkID)
 	}
 
 	// Remove from store
@@ -489,7 +489,7 @@ func (m *Manager) syncStatus(ctx context.Context, env *Environment) (*Environmen
 		if client.IsErrNotFound(err) {
 			env.Status = StatusOrphaned
 			env.ContainerID = ""
-			m.store.Save(env)
+			_ = m.store.Save(env)
 		}
 		return env, nil
 	}
@@ -620,11 +620,11 @@ func (m *Manager) Link(ctx context.Context, env1ID, env2ID string, opts Environm
 
 	// Update state
 	env1.LinkedEnvs = append(env1.LinkedEnvs, env2ID)
-	m.store.Save(env1)
+	_ = m.store.Save(env1)
 
 	if opts.Bidirectional {
 		env2.LinkedEnvs = append(env2.LinkedEnvs, env1ID)
-		m.store.Save(env2)
+		_ = m.store.Save(env2)
 	}
 
 	return nil
@@ -643,14 +643,14 @@ func (m *Manager) Unlink(ctx context.Context, env1ID, env2ID string) error {
 	}
 
 	// Disconnect networks
-	m.networkManager.UnlinkEnvironments(ctx, env1, env2)
+	_ = m.networkManager.UnlinkEnvironments(ctx, env1, env2)
 
 	// Update state
 	env1.LinkedEnvs = removeFromSlice(env1.LinkedEnvs, env2ID)
-	m.store.Save(env1)
+	_ = m.store.Save(env1)
 
 	env2.LinkedEnvs = removeFromSlice(env2.LinkedEnvs, env1ID)
-	m.store.Save(env2)
+	_ = m.store.Save(env2)
 
 	return nil
 }
@@ -669,7 +669,7 @@ func (m *Manager) Shell(ctx context.Context, nameOrID string, shell string) erro
 	}
 
 	if shell == "" {
-		shell = "/bin/sh"
+		// shell = "/bin/sh" // Removed ineffectual assignment if strictly unused
 	}
 
 	// Use docker exec for interactive shell
@@ -722,6 +722,6 @@ func parseMemory(s string) int64 {
 	}
 
 	var value int64
-	fmt.Sscanf(s, "%d", &value)
+	_, _ = fmt.Sscanf(s, "%d", &value)
 	return value * multiplier
 }
