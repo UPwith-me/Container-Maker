@@ -525,5 +525,8 @@ func init() {
 	remoteCmd.AddCommand(remoteShellCmd)
 	remoteCmd.AddCommand(remoteRemoveCmd)
 	remoteCmd.AddCommand(remoteSyncCmd)
+	remoteCmd.AddCommand(remoteForwardCmd)
+	remoteCmd.AddCommand(remoteContainerCmd)
+	remoteCmd.AddCommand(remoteContextCmd)
 	rootCmd.AddCommand(remoteCmd)
 }
