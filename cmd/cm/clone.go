@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/UPwith-me/Container-Maker/pkg/config"
@@ -187,13 +188,50 @@ func autoCreateConfig(projectDir string) error {
 		fmt.Printf("   📦 Monorepo: %s\n", info.MonorepoType)
 	}
 
-	// Get template recommendations
+	fmt.Println()
+
+	// For multi-language projects, use feature-based config
+	if len(info.Languages) > 1 {
+		fmt.Println("🌐 Multi-language project detected!")
+		fmt.Println("   Generating config with all language support...")
+		fmt.Println()
+
+		multiConfig, err := detect.GenerateMultiLangConfig(info)
+		if err != nil {
+			return fmt.Errorf("failed to generate multi-lang config: %w", err)
+		}
+
+		// Display summary
+		fmt.Println(multiConfig.Summary())
+
+		// Generate JSON
+		configJSON, err := multiConfig.ToJSON()
+		if err != nil {
+			return err
+		}
+
+		// Save config
+		configDir := filepath.Join(projectDir, ".devcontainer")
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			return err
+		}
+
+		configPath := filepath.Join(configDir, "devcontainer.json")
+		if err := os.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
+			return err
+		}
+
+		fmt.Printf("✅ Multi-language config created: %s\n", configPath)
+		return nil
+	}
+
+	// For single-language projects, use template approach
 	recommendations := detector.RecommendTemplates()
 	var templateName string
 
 	if len(recommendations) > 0 {
 		templateName = recommendations[0].Template
-		fmt.Printf("\n   Recommended: %s (%.0f%% confidence)\n",
+		fmt.Printf("   Recommended: %s (%.0f%% confidence)\n",
 			templateName, recommendations[0].Score*100)
 	} else {
 		templateName = "python-basic" // fallback
