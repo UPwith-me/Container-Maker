@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// SBOM represents a Software Bill of Materials (simplified CycloneDX)
+// SBOM represents a Software Bill of Materials (CycloneDX 1.5)
 type SBOM struct {
 	BOMFormat    string      `json:"bomFormat"`
 	SpecVersion  string      `json:"specVersion"`
@@ -33,17 +33,20 @@ type Tool struct {
 }
 
 type Component struct {
-	Type    string `json:"type"` // application, library
-	Name    string `json:"name"`
-	Version string `json:"version,omitempty"`
-	PURL    string `json:"purl,omitempty"` // Package URL
+	Type        string   `json:"type"` // application, library, framework
+	Name        string   `json:"name"`
+	Version     string   `json:"version,omitempty"`
+	PURL        string   `json:"purl,omitempty"`     // Package URL
+	Scope       string   `json:"scope,omitempty"`    // required, optional, dev
+	Licenses    []string `json:"licenses,omitempty"` // License IDs
+	Description string   `json:"description,omitempty"`
 }
 
 // GenerateSBOM generates an SBOM for the given path
 func GenerateSBOM(path string, projectName string) (*SBOM, error) {
 	sbom := &SBOM{
 		BOMFormat:    "CycloneDX",
-		SpecVersion:  "1.4",
+		SpecVersion:  "1.5",
 		SerialNumber: fmt.Sprintf("urn:uuid:%d", time.Now().UnixNano()),
 		Version:      1,
 		Metadata: Metadata{
@@ -51,7 +54,7 @@ func GenerateSBOM(path string, projectName string) (*SBOM, error) {
 			Tool: Tool{
 				Vendor:  "Container-Maker",
 				Name:    "cm-sbom",
-				Version: "1.0",
+				Version: "2.0",
 			},
 			Component: Component{
 				Type: "application",
@@ -73,7 +76,7 @@ func scanDirectory(root string, sbom *SBOM) error {
 		if err != nil {
 			return nil
 		}
-		if info.IsDir() && (info.Name() == ".git" || info.Name() == "node_modules" || info.Name() == "venv") {
+		if info.IsDir() && (info.Name() == ".git" || info.Name() == "node_modules" || info.Name() == "venv" || info.Name() == "target" || info.Name() == "__pycache__") {
 			return filepath.SkipDir
 		}
 		if info.IsDir() {
@@ -89,7 +92,13 @@ func scanDirectory(root string, sbom *SBOM) error {
 		case "requirements.txt":
 			parseRequirementsTxt(path, sbom)
 		case "pom.xml":
-			// Basic XML parsing placeholder
+			parsePomXml(path, sbom)
+		case "Cargo.toml":
+			parseCargoToml(path, sbom)
+		case "Gemfile.lock":
+			parseGemfileLock(path, sbom)
+		case "composer.json":
+			parseComposerJson(path, sbom)
 		}
 		return nil
 	})
@@ -190,4 +199,188 @@ func parseRequirementsTxt(path string, sbom *SBOM) {
 
 func cleanVersion(v string) string {
 	return strings.TrimPrefix(strings.TrimPrefix(v, "^"), "~")
+}
+
+// parsePomXml parses Maven POM files for Java dependencies
+func parsePomXml(path string, sbom *SBOM) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+
+	content := string(data)
+	// Simple regex-like parsing for dependencies
+	// Looking for <groupId>...</groupId><artifactId>...</artifactId><version>...</version>
+	lines := strings.Split(content, "\n")
+	var groupId, artifactId, version string
+	inDependency := false
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.Contains(line, "<dependency>") {
+			inDependency = true
+			groupId, artifactId, version = "", "", ""
+		}
+		if inDependency {
+			if strings.Contains(line, "<groupId>") {
+				groupId = extractXMLValue(line, "groupId")
+			}
+			if strings.Contains(line, "<artifactId>") {
+				artifactId = extractXMLValue(line, "artifactId")
+			}
+			if strings.Contains(line, "<version>") {
+				version = extractXMLValue(line, "version")
+			}
+		}
+		if strings.Contains(line, "</dependency>") && inDependency {
+			inDependency = false
+			if groupId != "" && artifactId != "" {
+				sbom.Components = append(sbom.Components, Component{
+					Type:    "library",
+					Name:    fmt.Sprintf("%s:%s", groupId, artifactId),
+					Version: version,
+					PURL:    fmt.Sprintf("pkg:maven/%s/%s@%s", groupId, artifactId, version),
+				})
+			}
+		}
+	}
+}
+
+func extractXMLValue(line, tag string) string {
+	start := fmt.Sprintf("<%s>", tag)
+	end := fmt.Sprintf("</%s>", tag)
+	if i := strings.Index(line, start); i != -1 {
+		line = line[i+len(start):]
+		if j := strings.Index(line, end); j != -1 {
+			return strings.TrimSpace(line[:j])
+		}
+	}
+	return ""
+}
+
+// parseCargoToml parses Rust Cargo.toml files
+func parseCargoToml(path string, sbom *SBOM) {
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	inDependencies := false
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "[dependencies]") || strings.HasPrefix(line, "[dev-dependencies]") {
+			inDependencies = true
+			continue
+		}
+		if strings.HasPrefix(line, "[") {
+			inDependencies = false
+			continue
+		}
+		if inDependencies && strings.Contains(line, "=") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				name := strings.TrimSpace(parts[0])
+				version := strings.Trim(strings.TrimSpace(parts[1]), "\"'")
+				// Handle complex version specs like { version = "1.0" }
+				if strings.Contains(version, "version") {
+					if i := strings.Index(version, "\""); i != -1 {
+						rest := version[i+1:]
+						if j := strings.Index(rest, "\""); j != -1 {
+							version = rest[:j]
+						}
+					}
+				}
+				sbom.Components = append(sbom.Components, Component{
+					Type:    "library",
+					Name:    name,
+					Version: version,
+					PURL:    fmt.Sprintf("pkg:cargo/%s@%s", name, version),
+				})
+			}
+		}
+	}
+}
+
+// parseGemfileLock parses Ruby Gemfile.lock files
+func parseGemfileLock(path string, sbom *SBOM) {
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	inSpecs := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.TrimSpace(line) == "specs:" {
+			inSpecs = true
+			continue
+		}
+		if inSpecs && len(line) > 0 && line[0] != ' ' {
+			inSpecs = false
+			continue
+		}
+		if inSpecs && strings.HasPrefix(line, "    ") && !strings.HasPrefix(line, "      ") {
+			// Gem line: "    gemname (version)"
+			line = strings.TrimSpace(line)
+			if i := strings.Index(line, " ("); i != -1 {
+				name := line[:i]
+				version := strings.Trim(line[i+2:], ")")
+				sbom.Components = append(sbom.Components, Component{
+					Type:    "library",
+					Name:    name,
+					Version: version,
+					PURL:    fmt.Sprintf("pkg:gem/%s@%s", name, version),
+				})
+			}
+		}
+	}
+}
+
+// parseComposerJson parses PHP composer.json files
+func parseComposerJson(path string, sbom *SBOM) {
+	type ComposerJSON struct {
+		Require    map[string]string `json:"require"`
+		RequireDev map[string]string `json:"require-dev"`
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+
+	var composer ComposerJSON
+	if err := json.Unmarshal(data, &composer); err != nil {
+		return
+	}
+
+	for name, version := range composer.Require {
+		if strings.HasPrefix(name, "php") || strings.HasPrefix(name, "ext-") {
+			continue // Skip PHP itself and extensions
+		}
+		version = cleanVersion(version)
+		sbom.Components = append(sbom.Components, Component{
+			Type:    "library",
+			Name:    name,
+			Version: version,
+			PURL:    fmt.Sprintf("pkg:composer/%s@%s", name, version),
+			Scope:   "required",
+		})
+	}
+
+	for name, version := range composer.RequireDev {
+		version = cleanVersion(version)
+		sbom.Components = append(sbom.Components, Component{
+			Type:    "library",
+			Name:    name,
+			Version: version,
+			PURL:    fmt.Sprintf("pkg:composer/%s@%s", name, version),
+			Scope:   "dev",
+		})
+	}
 }
