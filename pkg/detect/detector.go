@@ -798,47 +798,37 @@ func containsAny(slice []string, items ...string) bool {
 }
 
 // RecommendTemplates returns ranked template recommendations
+// Uses the advanced TemplateScorer for weighted multi-factor matching
 func (d *Detector) RecommendTemplates() []TemplateRecommendation {
 	info := d.info
 	if info == nil {
 		return nil
 	}
 
-	recommendations := make(map[string]*TemplateRecommendation)
+	// Use the advanced scorer
+	scorer := NewTemplateScorer()
+	scoredTemplates := scorer.ScoreTemplates(info)
 
-	// Add primary template
-	primaryTemplate := suggestTemplate(info)
-	recommendations[primaryTemplate] = &TemplateRecommendation{
-		Template:   primaryTemplate,
-		Score:      0.9,
-		Confidence: "high",
-		Reasons:    []string{"Primary language match"},
-	}
-
-	// Add GPU template if needed
-	if info.NeedsGPU {
-		gpuTemplate := "pytorch" // default
-		for _, fw := range info.GPUFrameworks {
-			if fw == "TensorFlow" {
-				gpuTemplate = "tensorflow"
-			} else if fw == "JAX" {
-				gpuTemplate = "jax-flax"
-			}
-		}
-		if _, exists := recommendations[gpuTemplate]; !exists {
-			recommendations[gpuTemplate] = &TemplateRecommendation{
-				Template:   gpuTemplate,
-				Score:      0.85,
-				Confidence: "high",
-				Reasons:    []string{"GPU requirements detected"},
-			}
-		}
-	}
-
-	// Convert to slice and sort
+	// Convert to TemplateRecommendation format
 	var result []TemplateRecommendation
-	for _, rec := range recommendations {
-		result = append(result, *rec)
+	for _, scored := range scoredTemplates {
+		result = append(result, TemplateRecommendation{
+			Template:   scored.Name,
+			Score:      scored.Score,
+			Confidence: scored.Confidence,
+			Reasons:    scored.Reasons,
+		})
+	}
+
+	// Fallback if no matches
+	if len(result) == 0 {
+		primaryTemplate := suggestTemplate(info)
+		result = append(result, TemplateRecommendation{
+			Template:   primaryTemplate,
+			Score:      0.5,
+			Confidence: "low",
+			Reasons:    []string{"Fallback based on primary language"},
+		})
 	}
 
 	return result
