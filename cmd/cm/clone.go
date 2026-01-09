@@ -242,7 +242,7 @@ func autoCreateConfig(projectDir string) error {
 	return template.ApplyTemplate(templateName, projectDir)
 }
 
-func fileExists(path string) bool {
+func _fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }

@@ -246,12 +246,24 @@ func (o *Orchestrator) startService(ctx context.Context, svc *Service, opts Star
 		containerConfig.ExposedPorts = make(nat.PortSet)
 		hostConfig.PortBindings = make(nat.PortMap)
 		for _, port := range svc.Ports {
-			// Format: "8080" or "8080:80" (host:container)
-			portStr := fmt.Sprintf("%d", port)
-			containerPort := nat.Port(portStr + "/tcp")
-			containerConfig.ExposedPorts[containerPort] = struct{}{}
-			hostConfig.PortBindings[containerPort] = []nat.PortBinding{
-				{HostIP: "0.0.0.0", HostPort: portStr},
+			containerPort := port.Target
+			hostPort := port.Published
+			if hostPort == 0 {
+				hostPort = containerPort // Same port if not specified
+			}
+			protocol := port.Protocol
+			if protocol == "" {
+				protocol = "tcp"
+			}
+			hostIP := port.HostIP
+			if hostIP == "" {
+				hostIP = "0.0.0.0"
+			}
+
+			containerPortStr := nat.Port(fmt.Sprintf("%d/%s", containerPort, protocol))
+			containerConfig.ExposedPorts[containerPortStr] = struct{}{}
+			hostConfig.PortBindings[containerPortStr] = []nat.PortBinding{
+				{HostIP: hostIP, HostPort: fmt.Sprintf("%d", hostPort)},
 			}
 		}
 	}

@@ -363,7 +363,7 @@ func getContext(lines []string, index, count int) []string {
 }
 
 // analyzeWithAI uses AI to analyze build errors
-func analyzeWithAI(ctx context.Context, errors []BuildError, fullLog string) (*DebugAnalysis, error) {
+func analyzeWithAI(ctx context.Context, errors []BuildError, _ string) (*DebugAnalysis, error) {
 	gen, err := ai.NewGenerator()
 	if err != nil {
 		return nil, err
@@ -521,8 +521,8 @@ func applyFix(fix FixSuggestion) error {
 	return nil
 }
 
-// truncateStr truncates a string to max length
-func truncateStr(s string, max int) string {
+// _truncateStr truncates a string to max length (kept for potential future use)
+func _truncateStr(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}
