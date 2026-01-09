@@ -106,7 +106,7 @@ Leverages Docker BuildKit for aggressive layer caching. Your environment spins u
 | Template marketplace | ❌ | ⚠️ Limited | ✅ |
 | Multi-runtime support | ⚠️ Docker only | ⚠️ Docker only | ✅ Docker/Podman |
 
-### 🆕 What's New in v3.1.0
+### 🆕 What's New in v3.0.0
 
 <details>
 <summary><b>🌐 Multi-Language Project Support</b></summary>

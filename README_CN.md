@@ -106,6 +106,96 @@
 | 模板市场 | ❌ | ⚠️ 有限 | ✅ |
 | 多运行时支持 | ⚠️ 仅 Docker | ⚠️ 仅 Docker | ✅ Docker/Podman |
 
+### 🆕 v3.0.0 新特性
+
+<details>
+<summary><b>🌐 多语言项目支持</b></summary>
+
+克隆任何项目，自动获得支持**所有**检测到的语言的开发环境：
+
+```bash
+cm clone https://github.com/example/fullstack-app
+
+🔍 Detection Results:
+   Primary Language: Python
+   All Languages: Python, JavaScript, Go
+   Frameworks: FastAPI, React
+
+🌐 Multi-language project detected!
+   Generating config with all language support...
+```
+
+生成包含以下内容的单一 `devcontainer.json`：
+- 通过 devcontainer features 支持所有语言运行时
+- 语言特定的 VS Code 扩展
+- 智能端口转发
+- 合并的依赖安装命令
+
+</details>
+
+<details>
+<summary><b>🤖 全面 AI 增强</b></summary>
+
+**智能构建调试**:
+```bash
+cm ai debug build.log       # 自动诊断构建失败原因
+cm prepare 2>&1 | cm ai debug -
+```
+
+**配置优化**:
+```bash
+cm ai optimize              # 分析配置以提升安全性/性能
+cm ai optimize --apply      # 自动应用修复
+```
+
+**本地 AI (无需 API Key)**:
+```bash
+cm ai local generate        # 使用 Ollama 生成
+cm ai local models          # 列出本地模型
+cm ai local pull codellama  # 拉取代码优化模型
+```
+
+</details>
+
+<details>
+<summary><b>🌍 远程开发增强</b></summary>
+
+**动态容器发现**:
+```bash
+cm remote shell                # 自动检测容器
+cm remote shell -c my-app      # 指定容器
+```
+
+**端口转发**:
+```bash
+cm remote forward 8080         # 转发单个端口
+cm remote forward --auto       # 自动检测端口
+```
+
+**Docker Context 支持**:
+```bash
+cm remote context myserver     # 使用原生 Docker context
+```
+
+</details>
+
+### 📊 功能状态
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| `cm clone` | ✅ 稳定 | 支持自动检测的项目克隆 |
+| `cm shell/run` | ✅ 稳定 | 容器执行 |
+| `cm ai generate` | ✅ 稳定 | AI 配置生成 |
+| `cm ai debug` | ✅ 稳定 | AI 驱动调试 |
+| `cm ai optimize` | ✅ 稳定 | 配置优化 |
+| `cm remote` | ✅ 稳定 | SSH 远程开发 |
+| `cm env` | ✅ 稳定 | 多环境管理 |
+| `cm workspace` | ✅ 稳定 | 多服务编排 |
+| `cm monitor` | ✅ 稳定 | TUI 仪表盘 |
+| `cm template` | ✅ 稳定 | 模板管理 |
+| `cm cloud` | ⚠️ **Beta** | 云端部署 (LocalDocker 可用) |
+| `cm marketplace` | ⚠️ **Beta** | 社区模板 |
+
 ---
 
 ## 🚀 快速开始
