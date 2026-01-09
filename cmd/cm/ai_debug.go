@@ -520,11 +520,3 @@ func applyFix(fix FixSuggestion) error {
 
 	return nil
 }
-
-// _truncateStr truncates a string to max length (kept for potential future use)
-func _truncateStr(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max-3] + "..."
-}
