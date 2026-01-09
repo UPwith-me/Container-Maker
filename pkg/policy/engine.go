@@ -3,10 +3,12 @@ package policy
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/UPwith-me/Container-Maker/pkg/workspace"
+	"gopkg.in/yaml.v3"
 )
 
 // SimpleEngine implements a basic policy engine
@@ -21,9 +23,38 @@ func NewEngine() *SimpleEngine {
 	}
 }
 
-// LoadPolicies loads policies from a file (placeholder for now)
+// LoadPolicies loads policies from a YAML file
 func (e *SimpleEngine) LoadPolicies(path string) error {
-	// In a real implementation, this would load YAML/Rego files
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read policy file: %w", err)
+	}
+
+	var policyFile struct {
+		Version  string   `yaml:"version"`
+		Policies []Policy `yaml:"policies"`
+	}
+
+	if err := yaml.Unmarshal(data, &policyFile); err != nil {
+		return fmt.Errorf("failed to parse policy file: %w", err)
+	}
+
+	// Merge with default policies, custom ones override
+	policyMap := make(map[string]Policy)
+	for _, p := range e.policies {
+		policyMap[p.ID] = p
+	}
+	for _, p := range policyFile.Policies {
+		p.Enabled = true // Loaded policies are enabled by default
+		policyMap[p.ID] = p
+	}
+
+	e.policies = make([]Policy, 0, len(policyMap))
+	for _, p := range policyMap {
+		e.policies = append(e.policies, p)
+	}
+
+	fmt.Printf("📋 Loaded %d policies from %s\n", len(policyFile.Policies), path)
 	return nil
 }
 

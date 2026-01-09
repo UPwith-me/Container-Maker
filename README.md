@@ -181,6 +181,25 @@ cm remote context myserver     # Use native Docker context
 
 </details>
 
+### 📊 Feature Status
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| `cm clone` | ✅ Stable | Clone repos with auto-detection |
+| `cm shell/run` | ✅ Stable | Container execution |
+| `cm ai generate` | ✅ Stable | AI config generation |
+| `cm ai debug` | ✅ Stable | AI-powered debugging |
+| `cm ai optimize` | ✅ Stable | Config optimization |
+| `cm remote` | ✅ Stable | SSH remote development |
+| `cm env` | ✅ Stable | Multi-environment management |
+| `cm workspace` | ✅ Stable | Multi-service orchestration |
+| `cm monitor` | ✅ Stable | TUI dashboard |
+| `cm template` | ✅ Stable | Template management |
+| `cm cloud` | ⚠️ **Beta** | Cloud deployment (providers in development) |
+| `cm marketplace` | ⚠️ **Beta** | Community templates |
+
+> **Note**: Features marked as **Beta** are functional but may have limited provider support or require additional configuration.
+
 ---
 
 ## 🚀 Quick Start
