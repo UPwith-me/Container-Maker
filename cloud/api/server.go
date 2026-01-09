@@ -428,13 +428,18 @@ func (s *Server) addCredential(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	// TODO: Encrypt the data before storing
+	// Encrypt the credential data using AES-256-GCM
+	encryptedData, err := encryptCredentialData(req.Data, s.config.JWTSecret)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt credentials")
+	}
+
 	cred := &db.CloudCredential{
 		ID:            uuid.New().String(),
 		UserID:        userID,
 		Provider:      req.Provider,
 		Name:          req.Name,
-		EncryptedData: fmt.Sprintf("%v", req.Data), // Should be encrypted
+		EncryptedData: encryptedData,
 		CreatedAt:     time.Now().UTC(),
 		UpdatedAt:     time.Now().UTC(),
 	}
@@ -455,7 +460,49 @@ func (s *Server) deleteCredential(c echo.Context) error {
 }
 
 func (s *Server) verifyCredential(c echo.Context) error {
-	// TODO: Actually verify credentials against the provider
+	id := c.Param("id")
+	ctx := c.Request().Context()
+
+	// Get the credential
+	cred, err := s.db.GetCredentialByID(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+	}
+
+	// Decrypt the credential data
+	credData, err := decryptCredentialData(cred.EncryptedData, s.config.JWTSecret)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to decrypt credentials")
+	}
+
+	// Get the provider
+	provider, err := s.providers.Get(providers.ProviderType(cred.Provider))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "unsupported provider")
+	}
+
+	// Configure the provider with credentials
+	if err := provider.Configure(credData); err != nil {
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"verified": false,
+			"error":    err.Error(),
+		})
+	}
+
+	// Test availability
+	if !provider.IsAvailable(ctx) {
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"verified": false,
+			"error":    "Provider not available with given credentials",
+		})
+	}
+
+	// Mark credential as verified (log for now, would update in DB if method existed)
+	cred.IsVerified = true
+	now := time.Now().UTC()
+	cred.LastVerified = &now
+	// Note: UpdateCredential not yet implemented in db package
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"verified": true,
 		"message":  "Credentials verified successfully",

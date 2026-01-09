@@ -3,7 +3,9 @@
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -13,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 )
 
 // Orchestrator manages service lifecycle for a workspace
@@ -238,11 +241,19 @@ func (o *Orchestrator) startService(ctx context.Context, svc *Service, opts Star
 		NetworkMode: container.NetworkMode(o.workspace.GenerateNetworkName()),
 	}
 
-	// Add ports
-	// Simplified port handling
-	for _, port := range svc.Ports {
-		// Port mappings would be added here
-		_ = port
+	// Add port mappings
+	if len(svc.Ports) > 0 {
+		containerConfig.ExposedPorts = make(nat.PortSet)
+		hostConfig.PortBindings = make(nat.PortMap)
+		for _, port := range svc.Ports {
+			// Format: "8080" or "8080:80" (host:container)
+			portStr := fmt.Sprintf("%d", port)
+			containerPort := nat.Port(portStr + "/tcp")
+			containerConfig.ExposedPorts[containerPort] = struct{}{}
+			hostConfig.PortBindings[containerPort] = []nat.PortBinding{
+				{HostIP: "0.0.0.0", HostPort: portStr},
+			}
+		}
 	}
 
 	// Add resource limits
@@ -374,10 +385,43 @@ func (o *Orchestrator) ensureImage(ctx context.Context, imageName string) error 
 	return nil
 }
 
-// buildImage builds an image for a service
-func (o *Orchestrator) buildImage(_ context.Context, svc *Service, _ bool) (string, error) {
-	// Simplified - would implement docker build
-	return "", fmt.Errorf("build not implemented for service %s", svc.Name)
+// buildImage builds an image for a service from Dockerfile or devcontainer.json
+func (o *Orchestrator) buildImage(ctx context.Context, svc *Service, noCache bool) (string, error) {
+	// Determine build context
+	buildContext := svc.Path
+	if buildContext == "" {
+		buildContext = "."
+	}
+
+	// Check for Dockerfile
+	dockerfilePath := filepath.Join(buildContext, "Dockerfile")
+	if _, err := os.Stat(dockerfilePath); err != nil {
+		// Try .devcontainer/Dockerfile
+		dockerfilePath = filepath.Join(buildContext, ".devcontainer", "Dockerfile")
+		if _, err := os.Stat(dockerfilePath); err != nil {
+			// No Dockerfile found, use image directly
+			return svc.Template, nil
+		}
+	}
+
+	// Build using docker CLI (more reliable for build context)
+	imageName := fmt.Sprintf("cm-%s-%s:latest", o.workspace.Name, svc.Name)
+
+	args := []string{"build", "-t", imageName, "-f", dockerfilePath}
+	if noCache {
+		args = append(args, "--no-cache")
+	}
+	args = append(args, buildContext)
+
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("docker build failed: %w", err)
+	}
+
+	return imageName, nil
 }
 
 // Status returns current workspace status
@@ -433,15 +477,61 @@ func (o *Orchestrator) Logs(ctx context.Context, service string, follow bool, ta
 	return nil
 }
 
-// Exec executes a command in a service
+// Exec executes a command in a service container
 func (o *Orchestrator) Exec(ctx context.Context, service string, command []string) error {
 	state := o.state.Services[service]
 	if state == nil || state.ContainerID == "" {
 		return fmt.Errorf("service %s is not running", service)
 	}
 
-	// Would use docker exec
-	return fmt.Errorf("exec not implemented")
+	// Create exec configuration
+	execConfig := container.ExecOptions{
+		Cmd:          command,
+		AttachStdout: true,
+		AttachStderr: true,
+		AttachStdin:  true,
+		Tty:          true,
+	}
+
+	// Create exec instance
+	execResp, err := o.dockerClient.ContainerExecCreate(ctx, state.ContainerID, execConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create exec: %w", err)
+	}
+
+	// Attach to exec
+	attachResp, err := o.dockerClient.ContainerExecAttach(ctx, execResp.ID, container.ExecStartOptions{Tty: true})
+	if err != nil {
+		return fmt.Errorf("failed to attach to exec: %w", err)
+	}
+	defer attachResp.Close()
+
+	// Copy output
+	go func() {
+		_, _ = io.Copy(os.Stdout, attachResp.Reader)
+	}()
+
+	// Copy input
+	go func() {
+		_, _ = io.Copy(attachResp.Conn, os.Stdin)
+	}()
+
+	// Wait for exec to complete
+	for {
+		inspect, err := o.dockerClient.ContainerExecInspect(ctx, execResp.ID)
+		if err != nil {
+			return err
+		}
+		if !inspect.Running {
+			if inspect.ExitCode != 0 {
+				return fmt.Errorf("command exited with code %d", inspect.ExitCode)
+			}
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return nil
 }
 
 // Close cleans up resources

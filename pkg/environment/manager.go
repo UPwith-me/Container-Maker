@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -363,11 +364,61 @@ func (m *Manager) ensureImage(ctx context.Context, imageName string) error {
 	return nil
 }
 
-// buildImage builds an image for an environment
-func (m *Manager) buildImage(_ context.Context, _ *Environment, _ *config.DevContainerConfig) (string, error) {
-	// Implementation for building from Dockerfile
-	// This would call docker build
-	return "", fmt.Errorf("Dockerfile build not yet implemented for environments")
+// buildImage builds an image for an environment from Dockerfile
+func (m *Manager) buildImage(ctx context.Context, env *Environment, cfg *config.DevContainerConfig) (string, error) {
+	// Determine Dockerfile path
+	dockerfilePath := ""
+	buildContext := env.ProjectDir
+
+	if cfg.Build != nil && cfg.Build.Dockerfile != "" {
+		dockerfilePath = filepath.Join(env.ProjectDir, ".devcontainer", cfg.Build.Dockerfile)
+		if cfg.Build.Context != "" {
+			buildContext = filepath.Join(env.ProjectDir, ".devcontainer", cfg.Build.Context)
+		}
+	} else {
+		// Check common locations
+		candidates := []string{
+			filepath.Join(env.ProjectDir, ".devcontainer", "Dockerfile"),
+			filepath.Join(env.ProjectDir, "Dockerfile"),
+		}
+		for _, c := range candidates {
+			if _, err := os.Stat(c); err == nil {
+				dockerfilePath = c
+				break
+			}
+		}
+	}
+
+	if dockerfilePath == "" {
+		return "", fmt.Errorf("no Dockerfile found for environment %s", env.Name)
+	}
+
+	// Generate image name
+	imageName := fmt.Sprintf("cm-env-%s:latest", env.ID[:12])
+
+	// Build args
+	args := []string{"build", "-t", imageName, "-f", dockerfilePath}
+
+	// Add build args from config
+	if cfg.Build != nil {
+		for key, val := range cfg.Build.Args {
+			args = append(args, "--build-arg", fmt.Sprintf("%s=%s", key, val))
+		}
+	}
+
+	args = append(args, buildContext)
+
+	fmt.Printf("🔨 Building image for environment %s...\n", env.Name)
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("docker build failed: %w", err)
+	}
+
+	fmt.Printf("✅ Built image: %s\n", imageName)
+	return imageName, nil
 }
 
 // Start starts a stopped environment
