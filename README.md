@@ -106,6 +106,81 @@ Leverages Docker BuildKit for aggressive layer caching. Your environment spins u
 | Template marketplace | ❌ | ⚠️ Limited | ✅ |
 | Multi-runtime support | ⚠️ Docker only | ⚠️ Docker only | ✅ Docker/Podman |
 
+### 🆕 What's New in v3.1.0
+
+<details>
+<summary><b>🌐 Multi-Language Project Support</b></summary>
+
+Clone any project and get a development environment supporting ALL detected languages:
+
+```bash
+cm clone https://github.com/example/fullstack-app
+
+🔍 Detection Results:
+   Primary Language: Python
+   All Languages: Python, JavaScript, Go
+   Frameworks: FastAPI, React
+
+🌐 Multi-language project detected!
+   Generating config with all language support...
+```
+
+Generates a single `devcontainer.json` with:
+- All language runtimes via devcontainer features
+- Language-specific VS Code extensions
+- Combined post-create commands
+- Framework-aware port forwarding
+
+**Supported Languages**: Go, Python, JavaScript, TypeScript, Rust, Java, C++, .NET/C#, Ruby, PHP
+
+</details>
+
+<details>
+<summary><b>🤖 AI Enhancements</b></summary>
+
+**Build Debugging**:
+```bash
+cm ai debug                  # Diagnose build failures
+cm ai debug build.log        # Analyze specific log
+```
+
+**Config Optimization**:
+```bash
+cm ai optimize              # Analyze and suggest improvements
+cm ai optimize --apply      # Auto-apply security/performance fixes
+```
+
+**Local AI (No API Key Required)**:
+```bash
+cm ai local generate        # Use Ollama for generation
+cm ai local models          # List local models
+cm ai local pull codellama  # Pull code-optimized model
+```
+
+</details>
+
+<details>
+<summary><b>🌍 Remote Development Improvements</b></summary>
+
+**Dynamic Container Discovery**:
+```bash
+cm remote shell                # Auto-detect container
+cm remote shell -c my-app      # Specify container
+```
+
+**Port Forwarding**:
+```bash
+cm remote forward 8080         # Forward single port
+cm remote forward --auto       # Auto-detect ports
+```
+
+**Docker Context Support**:
+```bash
+cm remote context myserver     # Use native Docker context
+```
+
+</details>
+
 ---
 
 ## 🚀 Quick Start
