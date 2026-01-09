@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/UPwith-me/Container-Maker/pkg/config"
+	"github.com/UPwith-me/Container-Maker/pkg/detect"
 	"github.com/UPwith-me/Container-Maker/pkg/runner"
 	"github.com/UPwith-me/Container-Maker/pkg/template"
 	"github.com/spf13/cobra"
@@ -151,24 +151,55 @@ func gitClone(url, dest string) error {
 
 // autoCreateConfig detects project type and creates a devcontainer.json
 func autoCreateConfig(projectDir string) error {
-	// Detect project type by looking for common files
-	templateName := "python-basic" // default
-
-	if fileExists(filepath.Join(projectDir, "go.mod")) {
-		templateName = "go-basic"
-	} else if fileExists(filepath.Join(projectDir, "package.json")) {
-		templateName = "node-basic"
-	} else if fileExists(filepath.Join(projectDir, "Cargo.toml")) {
-		templateName = "rust-basic"
-	} else if fileExists(filepath.Join(projectDir, "requirements.txt")) ||
-		fileExists(filepath.Join(projectDir, "pyproject.toml")) ||
-		fileExists(filepath.Join(projectDir, "setup.py")) {
-		templateName = "python-basic"
-	} else if fileExists(filepath.Join(projectDir, "CMakeLists.txt")) {
-		templateName = "cpp-cmake"
+	// Use the comprehensive detector
+	detector := detect.NewDetector(projectDir)
+	info, err := detector.Detect()
+	if err != nil {
+		return fmt.Errorf("detection failed: %w", err)
 	}
 
-	fmt.Printf("🔍 Detected project type: %s\n", templateName)
+	// Display detection results
+	fmt.Println()
+	fmt.Println("🔍 Detection Results:")
+	fmt.Printf("   Primary Language: %s\n", info.PrimaryLanguage)
+
+	if len(info.Languages) > 1 {
+		var langs []string
+		for _, l := range info.Languages {
+			langs = append(langs, l.Name)
+		}
+		fmt.Printf("   All Languages: %s\n", strings.Join(langs, ", "))
+	}
+
+	if len(info.Frameworks) > 0 {
+		fmt.Printf("   Frameworks: %s\n", strings.Join(info.Frameworks, ", "))
+	}
+
+	if info.NeedsGPU {
+		fmt.Printf("   🎮 GPU Required: Yes")
+		if len(info.GPUFrameworks) > 0 {
+			fmt.Printf(" (%s)", strings.Join(info.GPUFrameworks, ", "))
+		}
+		fmt.Println()
+	}
+
+	if info.IsMonorepo {
+		fmt.Printf("   📦 Monorepo: %s\n", info.MonorepoType)
+	}
+
+	// Get template recommendations
+	recommendations := detector.RecommendTemplates()
+	var templateName string
+
+	if len(recommendations) > 0 {
+		templateName = recommendations[0].Template
+		fmt.Printf("\n   Recommended: %s (%.0f%% confidence)\n",
+			templateName, recommendations[0].Score*100)
+	} else {
+		templateName = "python-basic" // fallback
+	}
+
+	fmt.Println()
 
 	return template.ApplyTemplate(templateName, projectDir)
 }

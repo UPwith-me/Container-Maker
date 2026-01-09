@@ -153,6 +153,15 @@ var remoteTestCmd = &cobra.Command{
 var remoteShellCmd = &cobra.Command{
 	Use:   "shell [name]",
 	Short: "Open shell on remote container",
+	Long: `Open an interactive shell in a remote container.
+
+If no container is running, this command will list available containers
+and prompt you to select one, or optionally create a new one.
+
+Examples:
+  cm remote shell                    # Use active remote, auto-detect container
+  cm remote shell myserver           # Specify remote host
+  cm remote shell --container myapp  # Specify container name`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := userconfig.Load()
 		if err != nil {
@@ -173,16 +182,108 @@ var remoteShellCmd = &cobra.Command{
 			return fmt.Errorf("remote host '%s' not found", name)
 		}
 
-		fmt.Printf("🚀 Connecting to %s...\n", host)
+		// Get container name from flag or auto-detect
+		containerName := remoteContainerName
+		if containerName == "" {
+			// Auto-detect: list CM-managed containers on remote
+			containerName, err = detectRemoteContainer(host)
+			if err != nil {
+				return err
+			}
+		}
+
+		fmt.Printf("🚀 Connecting to %s (container: %s)...\n", host, containerName)
+
+		// Determine shell
+		shell := "/bin/bash"
+		// Try to detect if bash is available, fallback to sh
+		testCmd := exec.Command("ssh", "-o", "ConnectTimeout=5", host,
+			"docker", "exec", containerName, "which", "bash")
+		if err := testCmd.Run(); err != nil {
+			shell = "/bin/sh"
+		}
 
 		// SSH to remote and run docker exec
-		sshCmd := exec.CommandContext(context.Background(), "ssh", "-t", host, "docker", "exec", "-it", "cm-dev", "/bin/bash")
+		sshCmd := exec.CommandContext(context.Background(), "ssh", "-t", host,
+			"docker", "exec", "-it", containerName, shell)
 		sshCmd.Stdin = os.Stdin
 		sshCmd.Stdout = os.Stdout
 		sshCmd.Stderr = os.Stderr
 
 		return sshCmd.Run()
 	},
+}
+
+var remoteContainerName string
+
+// detectRemoteContainer finds a CM-managed container on the remote host
+func detectRemoteContainer(host string) (string, error) {
+	// List containers with CM labels
+	listCmd := exec.Command("ssh", "-o", "ConnectTimeout=10", host,
+		"docker", "ps", "--filter", "label=cm.managed_by=container-maker",
+		"--format", "{{.Names}}")
+	output, err := listCmd.Output()
+	if err != nil {
+		// Fallback: list all running containers
+		listCmd = exec.Command("ssh", "-o", "ConnectTimeout=10", host,
+			"docker", "ps", "--format", "{{.Names}}")
+		output, err = listCmd.Output()
+		if err != nil {
+			return "", fmt.Errorf("failed to list containers: %w", err)
+		}
+	}
+
+	containers := strings.Split(strings.TrimSpace(string(output)), "\n")
+	containers = filterEmpty(containers)
+
+	if len(containers) == 0 {
+		return "", fmt.Errorf("no running containers found on remote host.\n" +
+			"💡 Start a container first, or use 'cm remote shell --container <name>'")
+	}
+
+	if len(containers) == 1 {
+		return containers[0], nil
+	}
+
+	// Multiple containers: prefer cm-prefixed ones
+	for _, c := range containers {
+		if strings.HasPrefix(c, "cm-") {
+			fmt.Printf("📦 Found CM container: %s\n", c)
+			return c, nil
+		}
+	}
+
+	// Multiple non-CM containers: prompt user
+	fmt.Println("📦 Multiple containers found:")
+	for i, c := range containers {
+		fmt.Printf("   %d. %s\n", i+1, c)
+	}
+	fmt.Print("Select container [1]: ")
+
+	var choice string
+	_, _ = fmt.Scanln(&choice)
+
+	if choice == "" {
+		return containers[0], nil
+	}
+
+	var idx int
+	if _, err := fmt.Sscanf(choice, "%d", &idx); err == nil && idx >= 1 && idx <= len(containers) {
+		return containers[idx-1], nil
+	}
+
+	// Treat as container name
+	return choice, nil
+}
+
+func filterEmpty(s []string) []string {
+	var result []string
+	for _, str := range s {
+		if strings.TrimSpace(str) != "" {
+			result = append(result, str)
+		}
+	}
+	return result
 }
 
 var remoteRemoveCmd = &cobra.Command{
@@ -409,6 +510,9 @@ func init() {
 	remoteSyncStartCmd.Flags().StringVar(&syncRemotePath, "remote-path", "", "Remote directory path (default: /workspace/<project>)")
 	remoteSyncPushCmd.Flags().StringVar(&syncRemotePath, "remote-path", "", "Remote directory path")
 	remoteSyncPullCmd.Flags().StringVar(&syncRemotePath, "remote-path", "", "Remote directory path")
+
+	// Add --container flag to shell command
+	remoteShellCmd.Flags().StringVarP(&remoteContainerName, "container", "c", "", "Container name to connect to")
 
 	remoteSyncCmd.AddCommand(remoteSyncStartCmd)
 	remoteSyncCmd.AddCommand(remoteSyncPushCmd)

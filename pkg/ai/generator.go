@@ -62,7 +62,28 @@ func (g *Generator) AnalyzeProject(ctx context.Context, projectDir string) (stri
 		return "", err
 	}
 
+	// Validate the generated config
+	validator := NewValidator(false) // non-strict mode
+	result := validator.Validate(response)
+
+	if !result.Valid {
+		// Try to fix common issues
+		response, err = g.attemptAutoFix(ctx, response, result)
+		if err != nil {
+			// Return the original with validation errors appended
+			return response + "\n\n// Validation errors: " +
+				FormatValidationResult(result), nil
+		}
+	}
+
 	return response, nil
+}
+
+// attemptAutoFix tries to fix common validation errors
+func (g *Generator) attemptAutoFix(ctx context.Context, config string, result *ValidationResult) (string, error) {
+	// For now, just return the original - can be extended later
+	// to actually attempt fixes
+	return config, fmt.Errorf("validation failed with %d errors", len(result.Errors))
 }
 
 // ProjectInfo holds information about a project
