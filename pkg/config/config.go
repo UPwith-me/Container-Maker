@@ -11,6 +11,8 @@ import (
 // DevContainerConfig represents the structure of devcontainer.json
 // Reference: https://containers.dev/implementors/json_reference/
 type DevContainerConfig struct {
+	Name string `json:"name,omitempty"`
+
 	// Image-based configuration
 	Image string       `json:"image,omitempty"`
 	Build *BuildConfig `json:"build,omitempty"`

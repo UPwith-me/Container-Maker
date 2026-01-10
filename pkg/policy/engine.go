@@ -122,15 +122,29 @@ func (e *SimpleEngine) EvaluateService(ctx context.Context, svc *workspace.Servi
 func (e *SimpleEngine) checkPolicy(p Policy, svc *workspace.Service) *Violation {
 	switch p.ID {
 	case "SEC-001": // No Privileged
-		// This requires checking capabilities or privileged flag
-		// Assuming we store this in Labels or strict config for now as the workspace type might not expose it directly yet
-		// But let's check if "privileged" is in networks or volumes which is wrong usage
-		return nil // Placeholder as Type definition might need update to support Privileged flag directly
+		if svc.Privileged {
+			return &Violation{
+				PolicyID:   p.ID,
+				PolicyName: p.Name,
+				Severity:   p.Severity,
+				Message:    "Service runs in privileged mode",
+				Resource:   svc.Name,
+				Suggestion: "Avoid using privileged mode if possible. Use specific capabilities (cap_add) instead.",
+				Timestamp:  time.Now(),
+			}
+		}
 
 	case "SEC-002": // Root User
-		if svc.Image != "" && !strings.Contains(svc.Image, "nonroot") {
-			// This is a naive check, real check needs image inspection
-			// Skipping for now to avoid false positives
+		if svc.User == "root" || svc.User == "0" {
+			return &Violation{
+				PolicyID:   p.ID,
+				PolicyName: p.Name,
+				Severity:   p.Severity,
+				Message:    "Service runs as root user",
+				Resource:   svc.Name,
+				Suggestion: "Configure a non-root user in 'user' field or Dockerfile",
+				Timestamp:  time.Now(),
+			}
 		}
 
 	case "RES-001": // Memory Limits

@@ -183,6 +183,8 @@ func (s *Syncer) rsync(src, dst string) error {
 
 	// Check if rsync is available
 	rsyncPath := "rsync"
+	useScp := false
+
 	if runtime.GOOS == "windows" {
 		// On Windows, try to find rsync in common locations
 		if _, err := exec.LookPath("rsync"); err != nil {
@@ -191,12 +193,40 @@ func (s *Syncer) rsync(src, dst string) error {
 			if _, err := os.Stat(gitBashRsync); err == nil {
 				rsyncPath = gitBashRsync
 			} else {
-				return fmt.Errorf("rsync not found. Install Git for Windows or WSL")
+				// Fallback to scp if available
+				if _, err := exec.LookPath("scp"); err == nil {
+					useScp = true
+					fmt.Println("⚠️  rsync not found, using scp fallback (slower, excludes ignored)")
+				} else {
+					return fmt.Errorf("rsync not found. Install Git for Windows or WSL")
+				}
+			}
+		}
+	} else {
+		if _, err := exec.LookPath("rsync"); err != nil {
+			if _, err := exec.LookPath("scp"); err == nil {
+				useScp = true
+				fmt.Println("⚠️  rsync not found, using scp fallback (slower, excludes ignored)")
+			} else {
+				return fmt.Errorf("rsync not found")
 			}
 		}
 	}
 
-	cmd := exec.Command(rsyncPath, args...)
+	var cmd *exec.Cmd
+	if useScp {
+		// SCP doesn't support exclusions or advanced progress, but works for basic sync
+		scpArgs := []string{
+			"-r",
+			"-o", "StrictHostKeyChecking=no",
+			"-o", "UserKnownHostsFile=/dev/null",
+			src, dst,
+		}
+		cmd = exec.Command("scp", scpArgs...)
+	} else {
+		cmd = exec.Command(rsyncPath, args...)
+	}
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

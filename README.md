@@ -106,7 +106,32 @@ Leverages Docker BuildKit for aggressive layer caching. Your environment spins u
 | Template marketplace | ❌ | ⚠️ Limited | ✅ |
 | Multi-runtime support | ⚠️ Docker only | ⚠️ Docker only | ✅ Docker/Podman |
 
-### 🆕 What's New in v3.0.0
+### 🆕 What's New in v3.1.0 (Industrial Edition)
+
+<details open>
+<summary><b>🏭 Industrial Grade Capabilities</b></summary>
+
+**Plugins & Extensibility**:
+```bash
+cm plugin install https://example.com/cm-my-plugin   # Install custom commands
+cm scan                                              # Vulnerability scanning (Trivy)
+```
+
+**Environment Snapshots**:
+```bash
+cm snapshot create "stable-v1" "Before upgrade"      # Save exact state
+cm snapshot restore "stable-v1"                      # Rollback instantly
+```
+
+**Offline Delivery (Air-Gap)**:
+```bash
+cm export project.cm                                 # Package image + config + code
+cm load project.cm                                   # Restore completely offline
+```
+
+</details>
+
+### 🌟 What's New in v3.0.0
 
 <details>
 <summary><b>🌐 Multi-Language Project Support</b></summary>
@@ -194,7 +219,11 @@ cm remote context myserver     # Use native Docker context
 | `cm env` | ✅ Stable | Multi-environment management |
 | `cm workspace` | ✅ Stable | Multi-service orchestration |
 | `cm monitor` | ✅ Stable | TUI dashboard |
-| `cm template` | ✅ Stable | Template management |
+| `cm snapshot` | ✅ Stable | Environment version control |
+| `cm export` | ✅ Stable | Offline bundle export |
+| `cm profile` | ✅ Stable | Resource usage profiling |
+| `cm plugin` | ⚠️ **Beta** | Extension system |
+| `cm scan` | ⚠️ **Beta** | Security vulnerability scanning |
 | `cm cloud` | ⚠️ **Beta** | Cloud deployment (providers in development) |
 | `cm marketplace` | ⚠️ **Beta** | Community templates |
 
@@ -582,6 +611,45 @@ Extend Container-Maker with custom behavior.
 - **Lifecycle Hooks**: Inject logic `PreStart` / `PostStart` (e.g., for specialized auditing or setup).
 - **Custom Auditing**: Built-in audit plugin tracks workspace events.
 
+### Environment Snapshots (`cm snapshot`)
+Capture the exact state of your container (files + memory + processes) and roll back anytime.
+```bash
+cm snapshot create "feature-wip"
+cm snapshot list
+cm snapshot restore "feature-wip"
+```
+
+### Resource Profiling (`cm profile`)
+AI-driven resource optimization. Analyzes container usage and suggests P95-based limits.
+```bash
+cm profile start
+# ... run your workload ...
+cm profile stop --report
+# Output: "Recommended: CPU: 2.0, Memory: 512MB"
+```
+
+### Security Scanning (`cm scan`)
+Scan your dev container for CVEs using Trivy integration.
+```bash
+cm scan
+cm scan --severity CRITICAL
+```
+
+### Offline Export (`cm export`)
+Bundle your entire environment (Image + Config + Code) into a single file for air-gapped delivery.
+```bash
+cm export my-env.cm
+# Transfer my-env.cm to offline machine
+cm load my-env.cm
+```
+
+### Global Config (`cm config`)
+Manage global settings for behavior, updates, and plugins.
+```bash
+cm config set update.check true
+cm config get ai.provider
+```
+
 
 ### Remote Development (`cm remote`)
 
@@ -797,6 +865,11 @@ Features:
 | Command | Description | Example |
 |---------|-------------|---------|
 | `cm ai generate` | AI-generate config | `cm ai generate` |
+| `cm snapshot` | Manage snapshots | `cm snapshot create` |
+| `cm profile` | Profile resources | `cm profile start` |
+| `cm scan` | Scan vulnerabilities | `cm scan` |
+| `cm plugin` | Manage plugins | `cm plugin list` |
+| `cm export/load` | Offline Support | `cm export` |
 | `cm marketplace search` | Search templates | `cm marketplace search --gpu` |
 | `cm marketplace install` | Install template | `cm marketplace install pytorch` |
 | `cm template list` | List local templates | `cm template list` |

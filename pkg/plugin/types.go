@@ -1,5 +1,3 @@
-// Package plugin provides an extensibility framework for Container-Maker.
-// It allows extending functionality via lifecycle hooks and custom commands.
 package plugin
 
 import (
@@ -8,49 +6,39 @@ import (
 	"github.com/UPwith-me/Container-Maker/pkg/workspace"
 )
 
-// PluginMetadata describes a plugin
+// PluginMetadata holds plugin manifest information
 type PluginMetadata struct {
-	ID          string `json:"id" yaml:"id"`
-	Name        string `json:"name" yaml:"name"`
-	Version     string `json:"version" yaml:"version"`
-	Description string `json:"description" yaml:"description"`
-	Author      string `json:"author" yaml:"author"`
-	Website     string `json:"website" yaml:"website"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Description string `json:"description"`
+	Author      string `json:"author,omitempty"`
 }
 
-// Plugin interface must be implemented by all plugins
+// Plugin defines the interface all plugins must implement
 type Plugin interface {
 	// Metadata returns the plugin metadata
 	Metadata() PluginMetadata
 
-	// Init initializes the plugin
+	// Init initializes the plugin with configuration
 	Init(ctx context.Context, config map[string]interface{}) error
 
 	// Close cleans up plugin resources
 	Close() error
 }
 
-// LifecyclePlugin allows hooking into workspace lifecycle
+// LifecyclePlugin allows hooking into the workspace lifecycle
 type LifecyclePlugin interface {
 	Plugin
-
-	// PreStart is called before services start
 	PreStart(ctx context.Context, ws *workspace.Workspace) error
-
-	// PostStart is called after services start
 	PostStart(ctx context.Context, ws *workspace.Workspace) error
-
-	// PreStop is called before services stop
 	PreStop(ctx context.Context, ws *workspace.Workspace) error
-
-	// PostStop is called after services stop
 	PostStop(ctx context.Context, ws *workspace.Workspace) error
 }
 
-// CLIPlugin allows adding custom CLI commands (placeholder for future expansion)
-type CLIPlugin interface {
+// ExecutablePlugin is a plugin that runs as an external process
+type ExecutablePlugin interface {
 	Plugin
-
-	// GetCommands returns custom commands to register
-	// GetCommands() []*cobra.Command
+	// Execute runs a custom command provided by the plugin
+	Execute(ctx context.Context, args []string, env []string) error
 }

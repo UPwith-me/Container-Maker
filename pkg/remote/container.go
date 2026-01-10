@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // ContainerManager handles remote container lifecycle
@@ -333,5 +334,5 @@ func (cm *ContainerManager) SyncProjectToContainer(ctx context.Context, localPat
 
 // currentTimestamp returns current timestamp for labels
 func currentTimestamp() string {
-	return fmt.Sprintf("%d", os.Getpid()) // Simplified
+	return time.Now().Format(time.RFC3339)
 }

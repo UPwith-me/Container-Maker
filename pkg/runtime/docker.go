@@ -395,7 +395,33 @@ func (r *DockerRuntime) CopyFileToContainer(ctx context.Context, containerID, de
 	return r.CopyToContainer(ctx, containerID, destDir, buf)
 }
 
+func (r *DockerRuntime) CommitContainer(ctx context.Context, id string, opts CommitOptions) (string, error) {
+	resp, err := r.client.ContainerCommit(ctx, id, container.CommitOptions{
+		Reference: opts.Repository + ":" + opts.Tag,
+		Comment:   opts.Comment,
+		Author:    opts.Author,
+		Pause:     opts.Pause,
+		Changes:   opts.Changes,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to commit container: %w", err)
+	}
+	return resp.ID, nil
+}
+
 // Client returns the underlying Docker client
 func (r *DockerRuntime) Client() *client.Client {
 	return r.client
+}
+
+// SaveImage saves a container image to a tar stream
+func (r *DockerRuntime) SaveImage(ctx context.Context, imageStr string) (io.ReadCloser, error) {
+	return r.client.ImageSave(ctx, []string{imageStr})
+}
+
+// RemoveImage removes an image
+func (r *DockerRuntime) RemoveImage(ctx context.Context, imageStr string, force bool) error {
+	opts := image.RemoveOptions{Force: force, PruneChildren: true}
+	_, err := r.client.ImageRemove(ctx, imageStr, opts)
+	return err
 }

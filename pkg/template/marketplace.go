@@ -87,10 +87,21 @@ func (m *Marketplace) Install(id, targetDir string) error {
 		return err
 	}
 
-	// Download template
-	resp, err := http.Get(tmpl.URL)
+	// Download template with retries
+	var resp *http.Response
+	for i := 0; i < 3; i++ {
+		resp, err = http.Get(tmpl.URL)
+		if err == nil && resp.StatusCode == 200 {
+			break
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
+		time.Sleep(time.Duration(i+1) * time.Second)
+	}
+
 	if err != nil {
-		return fmt.Errorf("failed to download template: %w", err)
+		return fmt.Errorf("failed to download template after 3 attempts: %w", err)
 	}
 	defer resp.Body.Close()
 

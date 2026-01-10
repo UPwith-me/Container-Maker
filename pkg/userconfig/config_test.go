@@ -147,4 +147,14 @@ func TestTeamRepository(t *testing.T) {
 	if repo.Priority != 100 {
 		t.Errorf("Priority = %d, want 100", repo.Priority)
 	}
+
+	if repo.URL != "https://github.com/test/repo" {
+		t.Errorf("URL mismatch")
+	}
+	if repo.Branch != "main" {
+		t.Errorf("Branch mismatch")
+	}
+	if repo.AuthType != "token" {
+		t.Errorf("AuthType mismatch")
+	}
 }

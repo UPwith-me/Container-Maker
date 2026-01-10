@@ -20,6 +20,9 @@ type UserConfig struct {
 	CloudAPIKey string `json:"cloud_api_key,omitempty"`
 	CloudToken  string `json:"cloud_token,omitempty"`
 	CloudAPIURL string `json:"cloud_api_url,omitempty"`
+
+	// System state
+	LastUpdateCheck int64 `json:"last_update_check,omitempty"` // Unix timestamp
 }
 
 // AIConfig holds AI-related settings
@@ -27,6 +30,7 @@ type AIConfig struct {
 	Enabled bool   `json:"enabled"`
 	APIKey  string `json:"api_key,omitempty"`
 	APIBase string `json:"api_base,omitempty"`
+	Model   string `json:"model,omitempty"`
 }
 
 // TeamConfig holds team/org settings for enterprise template management
@@ -75,8 +79,22 @@ func configPath() (string, error) {
 	return filepath.Join(home, ".cm", "config.json"), nil
 }
 
-// Load loads the user config from disk
+// Load loads the user config from disk and applies Environment Variable overrides
 func Load() (*UserConfig, error) {
+	// 1. Load from file
+	cfg, err := loadFile()
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Override with environment variables (Zero Hardcoding Principle)
+	applyEnvOverrides(cfg)
+
+	return cfg, nil
+}
+
+// loadFile loads the config solely from the JSON file
+func loadFile() (*UserConfig, error) {
 	path, err := configPath()
 	if err != nil {
 		return &UserConfig{}, nil
@@ -94,11 +112,30 @@ func Load() (*UserConfig, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return &UserConfig{}, nil
 	}
-
 	return &cfg, nil
 }
 
+func applyEnvOverrides(cfg *UserConfig) {
+	// CM_AI_API_KEY
+	if v := os.Getenv("CM_AI_API_KEY"); v != "" {
+		cfg.AI.APIKey = v
+	}
+	// CM_AI_MODEL
+	if v := os.Getenv("CM_AI_MODEL"); v != "" {
+		cfg.AI.Model = v
+	}
+	// CM_AI_API_BASE
+	if v := os.Getenv("CM_AI_API_BASE"); v != "" {
+		cfg.AI.APIBase = v
+	}
+	// CM_DEFAULT_BACKEND
+	if v := os.Getenv("CM_DEFAULT_BACKEND"); v != "" {
+		cfg.DefaultBackend = v
+	}
+}
+
 // Save saves the user config to disk
+// Save saves the user config to disk explicitly using atomic write pattern
 func Save(cfg *UserConfig) error {
 	path, err := configPath()
 	if err != nil {
@@ -116,10 +153,26 @@ func Save(cfg *UserConfig) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0644)
+	// Atomic write: create temp -> write -> rename
+	tmpFile, err := os.CreateTemp(dir, "config-*.json")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name()) // Clean up in case of failure before rename
+
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close() // Close before attempting removal (though defer handles it, good practice)
+		return err
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+
+	return os.Rename(tmpFile.Name(), path)
 }
 
-// Get gets a config value
+// Get gets a config value (Merged)
 func Get(key string) (string, error) {
 	cfg, err := Load()
 	if err != nil {
@@ -146,14 +199,17 @@ func Get(key string) (string, error) {
 		return "", nil
 	case "ai.api_base":
 		return cfg.AI.APIBase, nil
+	case "ai.model":
+		return cfg.AI.Model, nil
 	default:
 		return "", nil
 	}
 }
 
-// Set sets a config value
+// Set sets a config value (File Only)
 func Set(key, value string) error {
-	cfg, err := Load()
+	// Load CLEAN file config, ignoring Env vars
+	cfg, err := loadFile()
 	if err != nil {
 		cfg = &UserConfig{}
 	}
@@ -169,7 +225,19 @@ func Set(key, value string) error {
 		cfg.AI.APIKey = value
 	case "ai.api_base":
 		cfg.AI.APIBase = value
+	case "ai.model":
+		cfg.AI.Model = value
 	}
 
+	return Save(cfg)
+}
+
+// UpdateLastCheck updates the LastUpdateCheck timestamp in config file
+func UpdateLastCheck(timestamp int64) error {
+	cfg, err := loadFile()
+	if err != nil {
+		cfg = &UserConfig{}
+	}
+	cfg.LastUpdateCheck = timestamp
 	return Save(cfg)
 }

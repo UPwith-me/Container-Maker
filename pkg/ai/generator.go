@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/UPwith-me/Container-Maker/pkg/userconfig"
 )
@@ -41,10 +42,15 @@ func NewGenerator() (*Generator, error) {
 		apiBase = "https://api.openai.com/v1"
 	}
 
+	model := cfg.AI.Model
+	if model == "" {
+		model = "gpt-4o-mini" // Default to cheaper model
+	}
+
 	return &Generator{
 		apiKey:  cfg.AI.APIKey,
 		apiBase: apiBase,
-		model:   "gpt-4o-mini", // Default to cheaper model
+		model:   model,
 	}, nil
 }
 
@@ -81,9 +87,32 @@ func (g *Generator) AnalyzeProject(ctx context.Context, projectDir string) (stri
 
 // attemptAutoFix tries to fix common validation errors
 func (g *Generator) attemptAutoFix(ctx context.Context, config string, result *ValidationResult) (string, error) {
-	// For now, just return the original - can be extended later
-	// to actually attempt fixes
-	return config, fmt.Errorf("validation failed with %d errors", len(result.Errors))
+	fmt.Printf("🔧  Attempting to fix %d validation errors via AI...\n", len(result.Errors))
+
+	var sb strings.Builder
+	sb.WriteString("The following devcontainer.json configuration has validation errors:\n\n")
+	sb.WriteString("```json\n")
+	sb.WriteString(config)
+	sb.WriteString("\n```\n\n")
+	sb.WriteString("Validation Errors:\n")
+	for _, err := range result.Errors {
+		sb.WriteString(fmt.Sprintf("- %s\n", err.Message))
+	}
+	sb.WriteString("\nPlease fix these errors and return the valid JSON only.")
+
+	fixedConfig, err := g.callAPI(ctx, sb.String())
+	if err != nil {
+		return config, err
+	}
+
+	// Validate again
+	validator := NewValidator(false)
+	newResult := validator.Validate(fixedConfig)
+	if !newResult.Valid {
+		return fixedConfig, fmt.Errorf("auto-fix failed, %d errors remain", len(newResult.Errors))
+	}
+
+	return fixedConfig, nil
 }
 
 // ProjectInfo holds information about a project
@@ -316,7 +345,7 @@ Return ONLY the JSON, no explanation.`)
 	return sb.String()
 }
 
-// callAPI calls the OpenAI-compatible API
+// callAPI calls the OpenAI-compatible API with retry logic
 func (g *Generator) callAPI(ctx context.Context, prompt string) (string, error) {
 	reqBody := map[string]interface{}{
 		"model": g.model,
@@ -328,59 +357,77 @@ func (g *Generator) callAPI(ctx context.Context, prompt string) (string, error) 
 	}
 
 	jsonBody, _ := json.Marshal(reqBody)
+	var lastErr error
 
-	req, err := http.NewRequestWithContext(ctx, "POST", g.apiBase+"/chat/completions", bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return "", err
-	}
+	for i := 0; i < 3; i++ {
+		if i > 0 {
+			time.Sleep(time.Duration(i) * time.Second)
+			fmt.Printf("⚠️  API request failed, retrying... (%d/3)\n", i+1)
+		}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+g.apiKey)
+		req, err := http.NewRequestWithContext(ctx, "POST", g.apiBase+"/chat/completions", bytes.NewBuffer(jsonBody))
+		if err != nil {
+			return "", err
+		}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("API request failed: %w", err)
-	}
-	defer resp.Body.Close()
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+g.apiKey)
 
-	body, _ := io.ReadAll(resp.Body)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("API request failed: %w", err)
+			continue
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
-	}
+		body, _ := io.ReadAll(resp.Body)
 
-	var result struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
+		if resp.StatusCode != 200 {
+			lastErr = fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+			// Don't retry on 4xx errors (client error), except 429 (Too Many Requests)
+			if resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != 429 {
+				return "", lastErr
+			}
+			continue
+		}
 
-	if err := json.Unmarshal(body, &result); err != nil {
-		return "", err
-	}
+		var result struct {
+			Choices []struct {
+				Message struct {
+					Content string `json:"content"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
 
-	if len(result.Choices) == 0 {
-		return "", fmt.Errorf("no response from AI")
-	}
+		if err := json.Unmarshal(body, &result); err != nil {
+			lastErr = fmt.Errorf("failed to parse response: %w", err)
+			continue
+		}
 
-	// Extract JSON from response
-	content := result.Choices[0].Message.Content
-	content = strings.TrimSpace(content)
+		if len(result.Choices) == 0 {
+			lastErr = fmt.Errorf("no response from AI")
+			continue
+		}
 
-	// Remove markdown code blocks if present
-	if strings.HasPrefix(content, "```json") {
-		content = strings.TrimPrefix(content, "```json")
-		content = strings.TrimSuffix(content, "```")
+		// Extract JSON from response
+		content := result.Choices[0].Message.Content
 		content = strings.TrimSpace(content)
-	} else if strings.HasPrefix(content, "```") {
-		content = strings.TrimPrefix(content, "```")
-		content = strings.TrimSuffix(content, "```")
-		content = strings.TrimSpace(content)
+
+		// Remove markdown code blocks if present
+		if strings.HasPrefix(content, "```json") {
+			content = strings.TrimPrefix(content, "```json")
+			content = strings.TrimSuffix(content, "```")
+			content = strings.TrimSpace(content)
+		} else if strings.HasPrefix(content, "```") {
+			content = strings.TrimPrefix(content, "```")
+			content = strings.TrimSuffix(content, "```")
+			content = strings.TrimSpace(content)
+		}
+
+		return content, nil
 	}
 
-	return content, nil
+	return "", fmt.Errorf("max retries exceeded: %w", lastErr)
 }
 
 // SaveConfig saves the generated config to disk

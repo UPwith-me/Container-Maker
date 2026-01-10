@@ -83,6 +83,9 @@ func AddToPath(dir string) error {
 		return fmt.Errorf("auto PATH setup only supported on Windows")
 	}
 
+	// Escape single quotes effectively for PowerShell
+	escapedDir := strings.ReplaceAll(dir, "'", "''")
+
 	// Use PowerShell to add to PATH
 	ps := fmt.Sprintf(`
 $cmPath = '%s'
@@ -90,7 +93,7 @@ $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 if ($userPath -notlike "*$cmPath*") {
     [Environment]::SetEnvironmentVariable('Path', "$userPath;$cmPath", 'User')
 }
-`, dir)
+`, escapedDir)
 
 	cmd := exec.Command("powershell", "-Command", ps)
 	return cmd.Run()

@@ -15,10 +15,12 @@ import (
 	"github.com/UPwith-me/Container-Maker/pkg/detect"
 	"github.com/UPwith-me/Container-Maker/pkg/images"
 	mkpkg "github.com/UPwith-me/Container-Maker/pkg/make"
+	"github.com/UPwith-me/Container-Maker/pkg/plugin"
 	"github.com/UPwith-me/Container-Maker/pkg/runner"
 	"github.com/UPwith-me/Container-Maker/pkg/runtime"
 	"github.com/UPwith-me/Container-Maker/pkg/template"
 	"github.com/UPwith-me/Container-Maker/pkg/tui"
+	"github.com/UPwith-me/Container-Maker/pkg/update"
 	"github.com/UPwith-me/Container-Maker/pkg/watch"
 	"github.com/spf13/cobra"
 )
@@ -75,6 +77,10 @@ EXAMPLES
 		if cmd.Name() == "cm" {
 			tui.CheckAndSetupPath()
 		}
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		// Run smart update check (non-blocking)
+		update.CheckForUpdates(Version)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Show smart home screen when cm is run without arguments
@@ -316,6 +322,43 @@ end
 }
 
 func Execute() {
+	// Load plugins (Industrial Grade: Lazy Loading for startup speed)
+	pm := plugin.GetManager()
+	// Ignore discovery errors (non-critical)
+	_ = pm.DiscoverPlugins(context.Background())
+
+	for _, p := range pm.GetPlugins() {
+		// Use Metadata() which is potentially cached/lazy
+		meta := p.Metadata()
+		if meta.Name == "" {
+			continue
+		}
+
+		// Dynamically register plugin as top-level command
+		plugCmd := &cobra.Command{
+			Use:                meta.Name,
+			Short:              meta.Description, // Might be empty if lazy, strictly only available after load
+			DisableFlagParsing: true,             // Pass all flags to plugin
+			RunE: func(c *cobra.Command, args []string) error {
+				if execP, ok := p.(plugin.ExecutablePlugin); ok {
+					return execP.Execute(context.TODO(), args, os.Environ())
+				}
+				return fmt.Errorf("plugin %s is not executable", meta.Name)
+			},
+		}
+		// Avoid overwrite core commands
+		found := false
+		for _, c := range rootCmd.Commands() {
+			if c.Use == meta.Name || strings.HasPrefix(c.Use, meta.Name+" ") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			rootCmd.AddCommand(plugCmd)
+		}
+	}
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

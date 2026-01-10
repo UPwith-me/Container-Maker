@@ -106,7 +106,32 @@
 | 模板市场 | ❌ | ⚠️ 有限 | ✅ |
 | 多运行时支持 | ⚠️ 仅 Docker | ⚠️ 仅 Docker | ✅ Docker/Podman |
 
-### 🆕 v3.0.0 新特性
+### 🆕 v3.1.0 新特性 (工业版)
+
+<details open>
+<summary><b>🏭 工业级能力</b></summary>
+
+**插件与扩展性**:
+```bash
+cm plugin install https://example.com/cm-my-plugin   # 安装自定义命令
+cm scan                                              # 漏洞扫描 (Trivy)
+```
+
+**环境快照**:
+```bash
+cm snapshot create "stable-v1" "Before upgrade"      # 保存当前精确状态
+cm snapshot restore "stable-v1"                      # 瞬间回滚
+```
+
+**离线交付 (Air-Gap)**:
+```bash
+cm export project.cm                                 # 打包 镜像 + 配置 + 代码
+cm load project.cm                                   # 在无网环境完全恢复
+```
+
+</details>
+
+### 🌟 v3.0.0 新特性
 
 <details>
 <summary><b>🌐 多语言项目支持</b></summary>
@@ -192,7 +217,11 @@ cm remote context myserver     # 使用原生 Docker context
 | `cm env` | ✅ 稳定 | 多环境管理 |
 | `cm workspace` | ✅ 稳定 | 多服务编排 |
 | `cm monitor` | ✅ 稳定 | TUI 仪表盘 |
-| `cm template` | ✅ 稳定 | 模板管理 |
+| `cm snapshot` | ✅ 稳定 | 环境版本控制 |
+| `cm export` | ✅ 稳定 | 离线包导出 |
+| `cm profile` | ✅ 稳定 | 资源使用分析 |
+| `cm plugin` | ⚠️ **Beta** | 扩展系统 |
+| `cm scan` | ⚠️ **Beta** | 安全漏洞扫描 |
 | `cm cloud` | ⚠️ **Beta** | 云端部署 (LocalDocker 可用) |
 | `cm marketplace` | ⚠️ **Beta** | 社区模板 |
 
@@ -532,6 +561,45 @@ cm sbom -o sbom.json
 #### 插件系统 (`cm plugin`)
 扩展 Container-Maker 的能力，支持生命周期钩子 (`PreStart`/`PostStart`) 和自定义审计。
 
+### 环境快照 (`cm snapshot`)
+捕获容器的精确状态（文件+内存+进程）并随时回滚。
+```bash
+cm snapshot create "feature-wip"
+cm snapshot list
+cm snapshot restore "feature-wip"
+```
+
+### 资源分析 (`cm profile`)
+AI 驱动的资源优化。分析容器使用情况并建议基于 P95 的资源限制。
+```bash
+cm profile start
+# ... 运行负载 ...
+cm profile stop --report
+# 输出: "建议: CPU: 2.0, Memory: 512MB"
+```
+
+### 安全扫描 (`cm scan`)
+使用集成的 Trivy 扫描开发容器中的 CVE 漏洞。
+```bash
+cm scan
+cm scan --severity CRITICAL
+```
+
+### 离线导出 (`cm export`)
+将整个环境（镜像+配置+代码）打包成单个文件，用于气隙（Air-Gapped）环境交付。
+```bash
+cm export my-env.cm
+# 传输 my-env.cm 到离线机器
+cm load my-env.cm
+```
+
+### 全局配置 (`cm config`)
+管理行为、更新和插件的全局设置。
+```bash
+cm config set update.check true
+cm config get ai.provider
+```
+
 ### 远程开发 (`cm remote`)
 
 无缝连接远程机器并同步文件：
@@ -748,6 +816,11 @@ cm status
 | 命令 | 描述 | 示例 |
 |------|------|------|
 | `cm ai generate` | AI 生成配置 | `cm ai generate` |
+| `cm snapshot` | 管理快照 | `cm snapshot create` |
+| `cm profile` | 资源分析 | `cm profile start` |
+| `cm scan` | 漏洞扫描 | `cm scan` |
+| `cm plugin` | 插件管理 | `cm plugin list` |
+| `cm export/load` | 离线支持 | `cm export` |
 | `cm marketplace search` | 搜索模板 | `cm marketplace search --gpu` |
 | `cm marketplace install` | 安装模板 | `cm marketplace install pytorch` |
 | `cm template list` | 列出本地模板 | `cm template list` |

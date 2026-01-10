@@ -14,12 +14,13 @@ import (
 
 // Feature represents a DevContainer Feature
 type Feature struct {
-	ID          string                 `json:"id"`
-	Version     string                 `json:"version"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Options     map[string]interface{} `json:"options"`
-	InstallSh   string                 // Content of install.sh
+	ID            string                 `json:"id"`
+	Version       string                 `json:"version"`
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
+	Options       map[string]interface{} `json:"options"`
+	InstallSh     string                 // Content of install.sh
+	InstallsAfter []string               `json:"installsAfter,omitempty"`
 }
 
 // FeatureRef represents a reference to a feature in devcontainer.json
@@ -128,17 +129,7 @@ func downloadGHCRFeature(ref *FeatureRef, destDir string) (*Feature, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		// Feature download may require authentication or different API
-		// For now, return a stub feature with a warning
-		fmt.Printf("Warning: Could not download feature %s (status: %d). Feature will need manual installation.\n",
-			ref.ID, resp.StatusCode)
-
-		return &Feature{
-			ID:      ref.ID,
-			Version: ref.Version,
-			Name:    ref.ID,
-			Options: ref.Options,
-		}, nil
+		return nil, fmt.Errorf("failed to download feature manifest for %s: status %d", ref.ID, resp.StatusCode)
 	}
 
 	// Parse manifest
@@ -342,12 +333,29 @@ func (fi *FeatureInstaller) GenerateInstallScript() string {
 // SortByDependencies sorts features by their dependencies (if available)
 // Currently a stub - full implementation would parse devcontainer-feature.json for dependencies
 func (fi *FeatureInstaller) SortByDependencies() {
-	// For now, just sort alphabetically for consistent ordering
-	// Full implementation would topologically sort based on "dependsOn" field
-	for i := 0; i < len(fi.Features)-1; i++ {
-		for j := i + 1; j < len(fi.Features); j++ {
-			if fi.Features[i].ID > fi.Features[j].ID {
-				fi.Features[i], fi.Features[j] = fi.Features[j], fi.Features[i]
+	// Simple bubble sort-like pass to satisfy InstallsAfter
+	// We run multiple passes to propagate dependencies
+	changed := true
+	for pass := 0; pass < len(fi.Features)*len(fi.Features) && changed; pass++ {
+		changed = false
+		for i := 0; i < len(fi.Features)-1; i++ {
+			f1 := fi.Features[i]
+			f2 := fi.Features[i+1]
+
+			// Check if f1 installs after f2 (should swap)
+			shouldSwap := false
+			for _, after := range f1.InstallsAfter {
+				// Check against ID or Name
+				// Simple check: if f1 says it installs after f2, then f2 must come first
+				if strings.Contains(f2.ID, after) || strings.Contains(f2.Name, after) {
+					shouldSwap = true
+					break
+				}
+			}
+
+			if shouldSwap {
+				fi.Features[i], fi.Features[i+1] = fi.Features[i+1], fi.Features[i]
+				changed = true
 			}
 		}
 	}

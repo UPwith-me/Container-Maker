@@ -60,6 +60,14 @@ type Service struct {
 	// GPU
 	GPU *GPUConfig `yaml:"gpu,omitempty" json:"gpu,omitempty"`
 
+	// User
+	User string `yaml:"user,omitempty" json:"user,omitempty"`
+
+	// Security
+	Privileged bool     `yaml:"privileged,omitempty" json:"privileged,omitempty"`
+	CapAdd     []string `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
+	CapDrop    []string `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
+
 	// Volumes
 	Volumes []string `yaml:"volumes,omitempty" json:"volumes,omitempty"`
 

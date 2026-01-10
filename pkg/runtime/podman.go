@@ -401,6 +401,36 @@ func (r *PodmanRuntime) ResizeContainerTTY(ctx context.Context, id string, heigh
 	return nil
 }
 
+// CommitContainer creates an image from a container's changes
+func (r *PodmanRuntime) CommitContainer(ctx context.Context, id string, opts CommitOptions) (string, error) {
+	args := []string{"commit"}
+	if opts.Author != "" {
+		args = append(args, "--author", opts.Author)
+	}
+	if opts.Comment != "" {
+		args = append(args, "--message", opts.Comment)
+	}
+	if !opts.Pause { // Default is true usually, or flag is --pause=false for podman?
+		// Podman commit default pause is true.
+		args = append(args, "--pause=false")
+	}
+	for _, change := range opts.Changes {
+		args = append(args, "--change", change)
+	}
+
+	target := fmt.Sprintf("%s:%s", opts.Repository, opts.Tag)
+	args = append(args, id, target)
+
+	cmd := exec.CommandContext(ctx, r.path, args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("podman commit failed: %w: %s", err, string(out))
+	}
+
+	// Output is usually the image ID
+	return strings.TrimSpace(string(out)), nil
+}
+
 // CopyFileToContainer is a helper to copy a single file
 func (r *PodmanRuntime) CopyFileToContainer(ctx context.Context, containerID, destDir, filename string, content []byte) error {
 	buf := new(bytes.Buffer)
@@ -423,4 +453,47 @@ func (r *PodmanRuntime) CopyFileToContainer(ctx context.Context, containerID, de
 	}
 
 	return r.CopyToContainer(ctx, containerID, destDir, buf)
+}
+
+// SaveImage saves a container image to a tar stream
+func (r *PodmanRuntime) SaveImage(ctx context.Context, imageStr string) (io.ReadCloser, error) {
+	cmd := exec.CommandContext(ctx, r.path, "save", imageStr)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+	return &podmanStream{rc: stdout, cmd: cmd}, nil
+}
+
+type podmanStream struct {
+	rc  io.ReadCloser
+	cmd *exec.Cmd
+}
+
+func (s *podmanStream) Read(p []byte) (int, error) {
+	return s.rc.Read(p)
+}
+
+func (s *podmanStream) Close() error {
+	err := s.rc.Close()
+	if waitErr := s.cmd.Wait(); waitErr != nil {
+		if err == nil {
+			return waitErr
+		}
+	}
+	return err
+}
+
+// RemoveImage removes an image
+func (r *PodmanRuntime) RemoveImage(ctx context.Context, imageStr string, force bool) error {
+	args := []string{"rmi"}
+	if force {
+		args = append(args, "-f")
+	}
+	args = append(args, imageStr)
+	cmd := exec.CommandContext(ctx, r.path, args...)
+	return cmd.Run()
 }

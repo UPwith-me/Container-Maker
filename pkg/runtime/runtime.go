@@ -31,6 +31,9 @@ type ContainerRuntime interface {
 	PullImage(ctx context.Context, image string) error
 	BuildImage(ctx context.Context, opts BuildOptions) (string, error)
 	ImageExists(ctx context.Context, image string) bool
+	CommitContainer(ctx context.Context, id string, opts CommitOptions) (string, error)
+	SaveImage(ctx context.Context, image string) (io.ReadCloser, error)
+	RemoveImage(ctx context.Context, image string, force bool) error
 
 	// File operations
 	CopyToContainer(ctx context.Context, id, destPath string, content io.Reader) error
@@ -144,4 +147,14 @@ type BackendInfo struct {
 	Running   bool   `json:"running"`
 	IsCustom  bool   `json:"isCustom,omitempty"`
 	IsActive  bool   `json:"isActive,omitempty"`
+}
+
+// CommitOptions holds container commit parameters
+type CommitOptions struct {
+	Repository string
+	Tag        string
+	Comment    string
+	Author     string
+	Pause      bool
+	Changes    []string
 }
