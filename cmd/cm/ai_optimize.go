@@ -218,7 +218,7 @@ func applyOptimizations(configPath string, config map[string]interface{}, sugges
 	// Write new config
 	if err := os.WriteFile(configPath, newData, 0644); err != nil {
 		// Restore backup
-		os.Rename(backupPath, configPath)
+		_ = os.Rename(backupPath, configPath)
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
@@ -292,14 +292,13 @@ var aiLocalGenerateCmd = &cobra.Command{
 		fmt.Println(config)
 		fmt.Println()
 
-		// Confirm save
 		fmt.Print("Save to .devcontainer/devcontainer.json? [Y/n]: ")
 		var confirm string
-		fmt.Scanln(&confirm)
+		_, _ = fmt.Scanln(&confirm)
 
 		if confirm == "" || strings.ToLower(confirm) == "y" {
 			configDir := ".devcontainer"
-			os.MkdirAll(configDir, 0755)
+			_ = os.MkdirAll(configDir, 0755)
 			configPath := filepath.Join(configDir, "devcontainer.json")
 
 			if err := os.WriteFile(configPath, []byte(config), 0644); err != nil {

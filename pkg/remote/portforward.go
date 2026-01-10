@@ -132,19 +132,19 @@ func (pf *PortForwarder) handleConnection(ctx context.Context, local net.Conn, f
 	// Local -> Remote
 	go func() {
 		defer wg.Done()
-		io.Copy(remoteIn, local)
+		_, _ = io.Copy(remoteIn, local)
 		remoteIn.Close()
 	}()
 
 	// Remote -> Local
 	go func() {
 		defer wg.Done()
-		io.Copy(local, remoteOut)
+		_, _ = io.Copy(local, remoteOut)
 		local.Close()
 	}()
 
 	wg.Wait()
-	cmd.Wait()
+	_ = cmd.Wait()
 }
 
 // StopForward stops forwarding a specific port

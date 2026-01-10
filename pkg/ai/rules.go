@@ -263,11 +263,9 @@ func (e *RuleEngine) Generate(info *ProjectInfo) (string, error) {
 	}
 
 	// Apply matching rules in priority order
-	var appliedRules []string
 	for _, rule := range e.rules {
 		if rule.Condition(info) {
 			rule.Apply(config)
-			appliedRules = append(appliedRules, rule.Name)
 			break // Apply only the highest priority matching rule
 		}
 	}

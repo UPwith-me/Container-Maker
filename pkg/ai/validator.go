@@ -55,7 +55,7 @@ func (v *Validator) Validate(configJSON string) *ValidationResult {
 
 	// Parse the config
 	var config map[string]interface{}
-	json.Unmarshal([]byte(configJSON), &config)
+	_ = json.Unmarshal([]byte(configJSON), &config)
 
 	// 2. Schema validation
 	schemaErrors := v.validateSchema(config)

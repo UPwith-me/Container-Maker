@@ -181,8 +181,8 @@ func TestFeatureInstaller_SortByDependencies(t *testing.T) {
 
 	fi.SortByDependencies()
 
-	// Should be sorted alphabetically
-	expected := []string{"docker", "git", "zsh"}
+	// No dependencies means order is preserved (insertion order)
+	expected := []string{"zsh", "git", "docker"}
 	for i, f := range fi.Features {
 		if f.ID != expected[i] {
 			t.Errorf("Features[%d].ID = %q, want %q", i, f.ID, expected[i])

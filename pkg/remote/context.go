@@ -103,7 +103,7 @@ func (c *Context) RemoveContext(ctx context.Context) error {
 	contextName := fmt.Sprintf("cm-%s", c.name)
 
 	// First switch away from this context
-	c.ResetContext(ctx)
+	_ = c.ResetContext(ctx)
 
 	// Remove the context
 	cmd := exec.CommandContext(ctx, "docker", "context", "rm", contextName, "-f")

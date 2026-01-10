@@ -129,12 +129,12 @@ var loadCmd = &cobra.Command{
 				targetPath = cleanPath
 
 				if header.Typeflag == tar.TypeDir {
-					os.MkdirAll(targetPath, 0755)
+					_ = os.MkdirAll(targetPath, 0755)
 					continue
 				}
 
 				dir := filepath.Dir(targetPath)
-				os.MkdirAll(dir, 0755)
+				_ = os.MkdirAll(dir, 0755)
 
 				outFile, err := os.Create(targetPath)
 				if err != nil {
@@ -147,7 +147,7 @@ var loadCmd = &cobra.Command{
 					return err
 				}
 				outFile.Close()
-				os.Chmod(targetPath, os.FileMode(header.Mode))
+				_ = os.Chmod(targetPath, os.FileMode(header.Mode))
 				continue
 			}
 		}
